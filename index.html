@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>RLGL Master iOS Edition</title>
+    <title>RLGL Master iOS - Full Features</title>
     <style>
         :root {
             --bg: #0b0f19; --card: #161e2d; --accent: #38bdf8;
@@ -79,7 +79,6 @@
         }
 
         .top-display { z-index: 50; text-align: center; margin-top: 0; text-shadow: 0 2px 20px rgba(0,0,0,0.8); pointer-events: none; }
-        
         .status-text { font-size: clamp(4.5rem, 22vw, 9.5rem); font-weight: 900; text-transform: uppercase; letter-spacing: -5px; margin: 0; line-height: 0.8; }
 
         .media-background { 
@@ -87,8 +86,7 @@
             display: flex; justify-content: center; align-items: center; 
             z-index: 1; background: transparent; 
         }
-        /* iOS Fix: Object-Fit und Display Block */
-        #reddit-image, #reddit-video { width: 100%; height: 100%; object-fit: contain; display: block; }
+        #reddit-image, #reddit-video { width: 100%; height: 100%; object-fit: contain; }
 
         .bottom-bar { width: 90%; max-width: 650px; z-index: 50; margin-bottom: 0.5rem; }
         .progress-container { width: 100%; height: 12px; background: rgba(255,255,255,0.3); border-radius: 20px; position: relative; overflow: visible; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
@@ -101,7 +99,7 @@
         @keyframes pulse-anim { from { transform: scale(1); } to { transform: scale(1.1); } }
     </style>
 </head>
-<body class="setup-mode">
+<body>
 
     <div class="setup-container" id="setup-ui">
         <h2>Einstellungen</h2>
@@ -110,14 +108,23 @@
         <div class="settings-grid">
             <div class="input-group full-width">
                 <label>Quellen (Subreddits)</label>
-                <input type="text" id="t-sources" value="memes, pics, wholesome" placeholder="z.B. memes, pics">
+                <input type="text" id="t-sources" value="memes, pics" placeholder="z.B. memes, pics">
             </div>
             <div class="input-group full-width">
-                <label>Filter (API abhängig)</label>
+                <label>Medientypen</label>
                 <div class="checkbox-group">
                     <label class="checkbox-item"><input type="checkbox" id="f-img" checked> Bilder</label>
+                    <label class="checkbox-item"><input type="checkbox" id="f-vid" checked> Videos</label>
                     <label class="checkbox-item"><input type="checkbox" id="f-gif" checked> GIFs</label>
                 </div>
+            </div>
+            <div class="input-group">
+                <label>Sortierung</label>
+                <select id="t-sort">
+                    <option value="hot">Beliebt</option>
+                    <option value="new">Neu</option>
+                    <option value="top">Top (All Time)</option>
+                </select>
             </div>
             <div class="input-group">
                 <label>Wechsel (s)</label>
@@ -129,7 +136,7 @@
         <div class="settings-grid">
             <div class="input-group full-width">
                 <label>Gesamtzeit (Minuten)</label>
-                <input type="number" id="t-total-min" value="1" step="0.5" min="0.1">
+                <input type="number" id="t-total-min" value="1" step="0.5">
             </div>
             <div class="input-group"><label>Grün Min (s)</label><input type="number" id="t-gmin" value="5"></div>
             <div class="input-group"><label>Grün Max (s)</label><input type="number" id="t-gmax" value="12"></div>
@@ -154,6 +161,7 @@
         </button>
         <div class="media-background">
             <img id="reddit-image" src="" alt="" style="display:none;">
+            <video id="reddit-video" autoplay muted loop playsinline style="display:none;"></video>
         </div>
         <div class="top-display"><h1 id="status-label" class="status-text"></h1></div>
         <div class="bottom-bar"><div class="progress-container"><div id="phase-marker"></div><div id="progress-bar"></div></div></div>
@@ -163,53 +171,60 @@
         let cfg = {}; let isLive = false; let startT; let clock; let countdownInt; let mediaInt; let animFrame;
         let redditPosts = []; let postIndex = 0;
 
-        // --- FETCH STRATEGIE: MEME-API (Wrapper) ---
-        // Dies kombiniert die Sicherheit der API mit den Filtern des UIs
+        // --- DER FIX: HOCHLEISTUNGS-PROXY FÜR JSON ---
         async function fetchSources() {
             const sourceStr = document.getElementById('t-sources').value || "memes";
+            const sort = document.getElementById('t-sort').value;
+            const sources = sourceStr.split(',').map(s => s.trim()).filter(s => s !== "");
             
-            // Formatierung für API: "memes+pics+funny"
-            let subreddits = sourceStr.split(',')
-                .map(s => s.trim())
-                .filter(s => s !== "" && !s.startsWith('u/')) // API unterstützt keine User, nur Subs
-                .join('+'); 
-
-            if(subreddits.length === 0) subreddits = "memes";
-
             const fImg = document.getElementById('f-img').checked;
+            const fVid = document.getElementById('f-vid').checked;
             const fGif = document.getElementById('f-gif').checked;
 
             redditPosts = [];
 
-            try {
-                // Lade 50 Posts
-                const apiUrl = `https://meme-api.com/gimme/${subreddits}/50`;
-                const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error("API Fehler");
-                
-                const data = await response.json();
-                
-                if (data && data.memes) {
-                    data.memes.forEach(meme => {
-                        if (!meme.url) return;
-                        
-                        // Dateiendung prüfen für Filter
-                        const isGif = meme.url.match(/\.gif$/i);
-                        const isImg = meme.url.match(/\.(jpg|jpeg|png)$/i);
+            for (let s of sources) {
+                try {
+                    // Reddit JSON URL
+                    const redditUrl = `https://www.reddit.com/r/${s}/${sort}.json?limit=50`;
+                    
+                    // Wir nutzen api.allorigins.win - der stabilste Proxy für GitHub Pages
+                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(redditUrl)}`;
+                    
+                    const response = await fetch(proxyUrl);
+                    const data = await response.json();
+                    
+                    if (data && data.data && data.data.children) {
+                        data.data.children.forEach(post => {
+                            const p = post.data;
+                            let mediaObj = null;
 
-                        // Filtern basierend auf Checkboxen
-                        if ((fGif && isGif) || (fImg && isImg)) {
-                            // HTTPS erzwingen für GitHub Pages
-                            let secureUrl = meme.url.replace('http://', 'https://');
-                            redditPosts.push({ url: secureUrl });
-                        }
-                    });
-                }
-            } catch(e) {
-                console.error("Fehler beim Laden:", e);
+                            // Video Erkennung
+                            if (fVid && p.is_video && p.media?.reddit_video) {
+                                mediaObj = { url: p.media.reddit_video.fallback_url, isVid: true };
+                            } 
+                            // GIF Erkennung (über Preview-Video)
+                            else if (fGif && p.preview?.reddit_video_preview) {
+                                mediaObj = { url: p.preview.reddit_video_preview.fallback_url, isVid: true };
+                            }
+                            // Bild Erkennung
+                            else if (fImg && (p.post_hint === 'image' || p.url.match(/\.(jpg|jpeg|png)$/i))) {
+                                let url = p.url;
+                                if (p.preview?.images?.[0]?.source?.url) {
+                                    url = p.preview.images[0].source.url.replace(/&amp;/g, '&');
+                                }
+                                mediaObj = { url: url, isVid: false };
+                            }
+
+                            if (mediaObj) {
+                                // HTTPS sicherstellen
+                                mediaObj.url = mediaObj.url.replace('http://', 'https://');
+                                redditPosts.push(mediaObj);
+                            }
+                        });
+                    }
+                } catch(e) { console.error("Fehler bei " + s, e); }
             }
-
-            // Mischen
             redditPosts.sort(() => Math.random() - 0.5);
         }
 
@@ -217,36 +232,36 @@
             if (!isLive || redditPosts.length === 0) return;
             
             const img = document.getElementById('reddit-image');
+            const vid = document.getElementById('reddit-video');
             const p = redditPosts[postIndex];
             
-            img.style.display = 'none';
-            
-            img.onerror = () => { 
-                console.log("Bildfehler, skip:", p.url);
+            img.style.display = 'none'; vid.style.display = 'none'; vid.pause();
+
+            const errorHandler = () => { 
                 postIndex = (postIndex + 1) % redditPosts.length;
                 rotateMedia(); 
             };
-            img.onload = () => {
-                img.style.display = 'block'; 
-            };
 
-            // WICHTIG FÜR IOS/SAFARI/GITHUB:
-            // Hotlink-Schutz umgehen
-            img.referrerPolicy = "no-referrer";
-            img.removeAttribute('crossorigin');
-            
-            img.src = p.url;
+            if (p.isVid) {
+                vid.src = p.url;
+                vid.style.display = 'block';
+                vid.play().catch(errorHandler);
+            } else {
+                img.onerror = errorHandler;
+                img.referrerPolicy = "no-referrer";
+                img.removeAttribute('crossorigin');
+                img.src = p.url;
+                img.style.display = 'block';
+            }
             
             postIndex = (postIndex + 1) % redditPosts.length;
-            
             clearTimeout(mediaInt);
             mediaInt = setTimeout(rotateMedia, cfg.imgDur * 1000);
         }
 
         async function bootGame() {
             const btn = document.querySelector('.start-btn'); 
-            const originalText = btn.innerText;
-            btn.innerText = "SERVER VERBINDUNG...";
+            btn.innerText = "VERBINDE SERVER...";
             
             const totalSec = parseFloat(document.getElementById('t-total-min').value) * 60;
             cfg = {
@@ -261,14 +276,13 @@
             await fetchSources();
             
             if(redditPosts.length === 0) { 
-                alert("Keine Bilder gefunden. Bitte prüfe die Subreddits (User-Profile 'u/' gehen nicht mit dieser API)."); 
-                btn.innerText = originalText; 
+                alert("Keine Medien gefunden. Prüfe Internet & Subreddit Namen."); 
+                btn.innerText = "SPIEL STARTEN"; 
                 return; 
             }
             
             document.getElementById('setup-ui').style.display = 'none';
             document.getElementById('game-ui').style.display = 'flex';
-            
             isLive = true; startT = Date.now();
             engine(); cycle('green'); rotateMedia();
         }
@@ -278,6 +292,27 @@
             let elapsed = (Date.now() - startT) / 1000;
             document.getElementById('progress-bar').style.width = Math.min((elapsed/cfg.total)*100, 100) + "%";
             if (elapsed >= cfg.total) finish(); else animFrame = requestAnimationFrame(engine);
+        }
+
+        function cycle(type) {
+            if (!isLive) return;
+            let elapsed = (Date.now() - startT) / 1000;
+            let isWild = elapsed >= cfg.chaosPoint;
+            let dur, exp = isWild ? cfg.wildness : 1.0;
+            
+            dur = type === 'green' ? cfg.gMin + (cfg.gMax-cfg.gMin)*Math.pow(Math.random(), exp) : cfg.rMin + (cfg.rMax-cfg.rMin)*Math.pow(Math.random(), exp);
+
+            const label = document.getElementById('status-label');
+            if (type === 'green') {
+                document.body.className = 'green-active'; label.classList.remove('pulse');
+                runCountdown(dur);
+                clock = setTimeout(() => cycle('red'), dur * 1000);
+            } else {
+                clearInterval(countdownInt);
+                document.body.className = 'red-active'; label.innerText = "STOPP";
+                if (isWild) label.classList.add('pulse');
+                clock = setTimeout(() => cycle('green'), dur * 1000);
+            }
         }
 
         function runCountdown(sec) {
@@ -292,34 +327,12 @@
             }, 100);
         }
 
-        function cycle(type) {
-            if (!isLive) return;
-            let elapsed = (Date.now() - startT) / 1000;
-            let isWild = elapsed >= cfg.chaosPoint;
-            let dur, exp = isWild ? cfg.wildness : 1.0;
-            
-            if (Math.random() < 0.15) {
-                dur = type === 'green' ? Math.random()*(cfg.gMax-cfg.gMin)+cfg.gMin : Math.random()*(cfg.rMax-cfg.rMin)+cfg.rMin;
-            } else {
-                dur = type === 'green' ? cfg.gMin + (cfg.gMax-cfg.gMin)*Math.pow(Math.random(), exp) : cfg.rMin + (cfg.rMax-cfg.rMin)*Math.pow(Math.random(), exp);
-            }
-
-            const label = document.getElementById('status-label');
-            if (type === 'green') {
-                document.body.className = 'green-active'; label.classList.remove('pulse'); runCountdown(dur);
-                clock = setTimeout(() => cycle('red'), dur * 1000);
-            } else {
-                clearInterval(countdownInt); document.body.className = 'red-active'; label.innerText = "STOPP";
-                if (isWild) label.classList.add('pulse');
-                clock = setTimeout(() => cycle('green'), dur * 1000);
-            }
-        }
-
         function finish() {
-            isLive = false; cancelAnimationFrame(animFrame); clearTimeout(clock); clearTimeout(mediaInt); clearInterval(countdownInt);
+            isLive = false; clearTimeout(clock); clearTimeout(mediaInt); clearInterval(countdownInt);
             document.body.className = ''; document.body.style.backgroundColor = "#38bdf8";
             document.getElementById('status-label').innerText = "ZIEL";
             document.getElementById('reddit-image').style.display = 'none';
+            document.getElementById('reddit-video').pause();
         }
     </script>
 </body>

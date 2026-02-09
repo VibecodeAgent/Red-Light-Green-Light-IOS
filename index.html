@@ -3,284 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>RLGL iPhone Edition</title>
+    <title>RLGL Ultimate (JSON + Proxy Fix)</title>
     <style>
         :root {
-            --apple-blue: #007aff; --apple-red: #ff3b30; --apple-green: #34c759;
-            --bg: #000; --glass: rgba(255, 255, 255, 0.1);
+            --bg: #0b0f19; --card: #161e2d; --accent: #38bdf8;
+            --green: #10b981; --red: #ef4444; --white: #f8fafc;
+            --input-bg: rgba(11, 15, 25, 0.9);
         }
 
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: var(--bg); color: white;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden; transition: background-color 0.5s ease;
+        html, body {
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg); color: var(--white);
+            display: flex; justify-content: center; align-items: center;
+            transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden; -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- IPHONE UI LAYOUT --- */
-        #setup-ui {
-            padding: 2rem; display: flex; flex-direction: column; height: 100%;
-            justify-content: center; box-sizing: border-box;
-            background: radial-gradient(circle at top right, #1c1c1e, #000);
+        /* --- SETTINGS PORTAL --- */
+        .setup-container { 
+            padding: 2rem; border-radius: 2rem; width: 90%; max-width: 500px; 
+            background: var(--card); box-shadow: 0 30px 60px rgba(0,0,0,0.9);
+            z-index: 100; text-align: center; max-height: 90vh; overflow-y: auto;
+            backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05);
+            scrollbar-width: none;
         }
+        .setup-container::-webkit-scrollbar { display: none; }
 
-        h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 2rem; text-align: center; }
+        h2 { margin: 0 0 1.5rem 0; color: var(--accent); font-size: 1.8rem; font-weight: 800; }
 
-        .ios-card {
-            background: var(--glass); backdrop-filter: blur(20px);
-            border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        label { display: block; font-size: 0.75rem; font-weight: 600; color: #8e8e93; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .input-group { margin-bottom: 1rem; text-align: left; }
+        label { font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
         
-        input, select {
-            width: 100%; background: rgba(0,0,0,0.3); border: none;
-            padding: 0.8rem; border-radius: 12px; color: white; font-size: 1rem;
-            outline: none; box-sizing: border-box;
+        input, select { 
+            background: var(--input-bg); border: 2px solid #334155; padding: 0.8rem; 
+            border-radius: 0.8rem; color: white; font-size: 1rem; outline: none; width: 100%; box-sizing: border-box;
         }
+        input:focus { border-color: var(--accent); }
 
-        .ios-btn {
-            background: var(--apple-blue); color: white; border: none;
-            padding: 1.2rem; border-radius: 18px; font-size: 1.1rem; font-weight: 700;
-            width: 100%; cursor: pointer; transition: transform 0.2s;
+        .start-btn { 
+            width: 100%; background: var(--accent); color: var(--bg); border: none; 
+            padding: 1.2rem; border-radius: 1rem; font-weight: 900; font-size: 1.2rem; 
+            cursor: pointer; margin-top: 1.5rem; text-transform: uppercase;
         }
-        .ios-btn:active { transform: scale(0.97); opacity: 0.9; }
 
         /* --- GAME UI --- */
         #game-ui { 
-            display: none; width: 100%; height: 100%; 
-            flex-direction: column; justify-content: space-between;
+            display: none; width: 100vw; height: 100vh; flex-direction: column; 
+            justify-content: space-between; align-items: center; position: relative; 
+            z-index: 10; padding: env(safe-area-inset-top, 1rem) 1rem env(safe-area-inset-bottom, 1rem) 1rem; 
+            box-sizing: border-box; 
         }
 
-        .status-display {
-            padding-top: env(safe-area-inset-top, 1rem); text-align: center;
-            z-index: 100; pointer-events: none;
+        .btn-close {
+            position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(0,0,0,0.4); border: none; 
+            color: white; width: 3rem; height: 3rem; border-radius: 50%; display: flex;
+            justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(5px);
         }
 
-        .status-text {
-            font-size: clamp(3rem, 15vw, 6rem); font-weight: 900;
-            text-transform: uppercase; text-shadow: 0 0 30px rgba(0,0,0,0.8);
-            margin: 0; line-height: 1;
-        }
-
-        .media-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1; display: flex; align-items: center; justify-content: center;
+        .media-background { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; justify-content: center; align-items: center; 
+            z-index: 1; background: black;
         }
         
-        #m-img, #m-vid { max-width: 100%; max-height: 100%; object-fit: contain; }
-
-        .ios-close {
-            position: absolute; top: calc(env(safe-area-inset-top) + 10px); right: 20px;
-            z-index: 200; background: rgba(0,0,0,0.5); border-radius: 50%;
-            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+        /* FIX FÜR BILDANZEIGE */
+        #reddit-image { 
+            width: 100%; height: 100%; object-fit: contain; 
+            display: block; opacity: 1; transition: opacity 0.2s;
         }
 
-        .ios-progress {
-            width: 90%; margin: 0 auto 30px auto; height: 6px;
-            background: rgba(255,255,255,0.2); border-radius: 10px;
-            z-index: 100; overflow: hidden; position: relative;
+        .status-text { 
+            font-size: clamp(4rem, 20vw, 8rem); font-weight: 900; 
+            text-transform: uppercase; margin: 0; line-height: 1; 
+            text-shadow: 0 4px 30px rgba(0,0,0,0.5); z-index: 50; pointer-events: none;
         }
-        #bar { width: 0%; height: 100%; background: white; transition: width 0.1s linear; }
 
-        /* --- ANIMATIONS --- */
-        body.green { background-color: var(--apple-green); }
-        body.red { background-color: var(--apple-red); }
+        .progress-container { 
+            width: 100%; height: 10px; background: rgba(255,255,255,0.2); 
+            border-radius: 10px; overflow: hidden; z-index: 50; 
+        }
+        #progress-bar { width: 0%; height: 100%; background: white; }
+
+        body.green-active { background-color: var(--green); }
+        body.red-active { background-color: var(--red); }
     </style>
 </head>
-<body>
+<body class="setup-mode">
 
-    <div id="setup-ui">
-        <h1>RLGL iPhone</h1>
-        
-        <div class="ios-card">
-            <label>Subreddit(s)</label>
-            <input type="text" id="inp-sub" placeholder="memes, pics, aww">
+    <div class="setup-container" id="setup-ui">
+        <h2>Einstellungen</h2>
+        <div class="input-group">
+            <label>Subreddits</label>
+            <input type="text" id="t-sources" value="memes, pics, funny" placeholder="Subreddits...">
         </div>
-
-        <div class="ios-card">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div>
-                    <label>Gesamtzeit (Min)</label>
-                    <input type="number" id="inp-total" value="1" step="0.5">
-                </div>
-                <div>
-                    <label>Bilder-Dauer</label>
-                    <input type="number" id="inp-imgdur" value="8">
-                </div>
-            </div>
+        <div class="input-group">
+            <label>Gesamtzeit (Minuten)</label>
+            <input type="number" id="t-total-min" value="1" step="0.5">
         </div>
-
-        <div class="ios-card">
-            <label>Medientypen</label>
-            <div style="display: flex; gap: 20px; font-size: 0.9rem;">
-                <label style="color:white;"><input type="checkbox" id="c-img" checked> Bilder</label>
-                <label style="color:white;"><input type="checkbox" id="c-vid" checked> Videos</label>
-            </div>
+        <div class="input-group">
+            <label>Bildwechsel (Sekunden)</label>
+            <input type="number" id="t-img-dur" value="5">
         </div>
-
-        <button class="ios-btn" onclick="startIPhoneGame()">STARTEN</button>
+        <button class="start-btn" onclick="bootGame()">SPIEL STARTEN</button>
     </div>
 
     <div id="game-ui">
-        <div class="ios-close" onclick="location.reload()">✕</div>
+        <button class="btn-close" onclick="location.reload()">✕</button>
         
-        <div class="status-display">
-            <h1 id="label" class="status-text"></h1>
+        <div class="media-background">
+            <img id="reddit-image" src="" alt="Lade..." style="display:none;">
         </div>
-
-        <div class="media-container">
-            <img id="m-img" style="display:none;">
-            <video id="m-vid" autoplay muted loop playsinline style="display:none;"></video>
-        </div>
-
-        <div class="ios-progress">
-            <div id="bar"></div>
+        
+        <h1 id="status-label" class="status-text"></h1>
+        
+        <div class="progress-container">
+            <div id="progress-bar"></div>
         </div>
     </div>
 
     <script>
-        let redditData = [];
-        let config = {};
-        let active = false;
-        let startT, clock, countdownInt, mediaInt;
+        let cfg = {}; let isLive = false; let startT; let clock; let countdownInt; let mediaInt; let animFrame;
+        let redditPosts = []; let postIndex = 0;
 
-        async function startIPhoneGame() {
-            const btn = document.querySelector('.ios-btn');
-            btn.innerText = "LÄDT...";
+        // --- DER FIX: JSON API ÜBER PROXY ---
+        // Nutzt die Qualität von JSON, aber funktioniert am PC dank Proxy
+        async function fetchSources() {
+            const sourceStr = document.getElementById('t-sources').value || "memes";
+            const sources = sourceStr.split(',').map(s => s.trim()).filter(s => s !== "");
             
-            const sub = document.getElementById('inp-sub').value || "memes";
-            const subs = sub.split(',').map(s => s.trim());
-            const useImg = document.getElementById('c-img').checked;
-            const useVid = document.getElementById('c-vid').checked;
-            
-            // --- REDDIT JSON API (iOS-kompatibel) ---
-            for (let s of subs) {
+            redditPosts = [];
+
+            for (let s of sources) {
                 try {
-                    const jsonUrl = `https://www.reddit.com/r/${s}/hot.json?limit=50`;
-                    const response = await fetch(jsonUrl);
+                    // Wir bauen die URL für die JSON API
+                    const redditUrl = `https://www.reddit.com/r/${s}/hot.json?limit=75`;
+                    
+                    // Wir nutzen einen Proxy, der auch große Datenmengen (JSON) sauber durchleitet
+                    // "corsproxy.io" ist oft stabiler als allorigins für JSON
+                    const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(redditUrl);
+                    
+                    const response = await fetch(proxyUrl);
                     const data = await response.json();
                     
-                    data.data.children.forEach(post => {
-                        const p = post.data;
-                        
-                        // Bild-Posts
-                        if (useImg && p.post_hint === 'image' && p.url) {
-                            redditData.push({url: p.url, is_video: false});
-                        }
-                        // Preview-Bilder (als Fallback für andere Post-Typen)
-                        else if (useImg && p.preview && p.preview.images && p.preview.images[0]) {
-                            const imgUrl = p.preview.images[0].source.url.replace(/&amp;/g, '&');
-                            redditData.push({url: imgUrl, is_video: false});
-                        }
-                        // Video-Posts
-                        else if (useVid && p.is_video && p.media && p.media.reddit_video) {
-                            redditData.push({url: p.media.reddit_video.fallback_url, is_video: true});
-                        }
-                    });
-                } catch(e) { 
-                    console.error(`Fehler bei r/${s}:`, e); 
+                    if (data && data.data && data.data.children) {
+                        data.data.children.forEach(post => {
+                            const p = post.data;
+                            let imgUrl = null;
+
+                            // Logik aus deiner Analyse (Priorisiert hohe Qualität)
+                            if (p.post_hint === 'image' && p.url) {
+                                imgUrl = p.url;
+                            } else if (p.preview && p.preview.images && p.preview.images[0]) {
+                                imgUrl = p.preview.images[0].source.url;
+                            } else if (p.url && p.url.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                                imgUrl = p.url;
+                            }
+
+                            // Nur hinzufügen, wenn URL gültig ist
+                            if (imgUrl) {
+                                // WICHTIG: Ersetzt &amp; für iOS
+                                imgUrl = imgUrl.replace(/&amp;/g, '&');
+                                redditPosts.push({ url: imgUrl });
+                            }
+                        });
+                    }
+                } catch(e) {
+                    console.error("Fehler bei " + s, e);
+                    // Fallback: Wenn Proxy 1 versagt, versuche direkten RSS Fetch (schlechtere Quali, aber geht immer)
+                    await fetchRSSFallback(s);
                 }
             }
 
-            if(redditData.length === 0) {
-                alert("Keine Medien gefunden. Versuche Subreddits wie 'memes' oder 'pics'.");
-                btn.innerText = "STARTEN";
-                return;
-            }
+            redditPosts.sort(() => Math.random() - 0.5);
+        }
 
-            // Shuffle
-            redditData.sort(() => Math.random() - 0.5);
-
-            config = {
-                total: parseFloat(document.getElementById('inp-total').value) * 60,
-                imgDur: parseFloat(document.getElementById('inp-imgdur').value),
-                gMin: 5, gMax: 12, rMin: 4, rMax: 10
-            };
-
-            document.getElementById('setup-ui').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'flex';
-            active = true;
-            startT = Date.now();
-            
-            gameEngine();
-            nextPhase('green');
-            rotateMedia();
+        // Sicherheitsnetz: Falls JSON Proxy blockiert ist, nimm RSS
+        async function fetchRSSFallback(subreddit) {
+            try {
+                const rssProxy = `https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.reddit.com%2Fr%2F${subreddit}%2Fhot.rss`;
+                const r = await fetch(rssProxy);
+                const j = await r.json();
+                if(j.items) {
+                    j.items.forEach(i => {
+                        const m = i.content.match(/src="([^"]+)"/);
+                        if(m) redditPosts.push({ url: m[1].replace(/&amp;/g, '&') });
+                    });
+                }
+            } catch(e) { console.log("Fallback failed"); }
         }
 
         function rotateMedia() {
-            if(!active) return;
-            const img = document.getElementById('m-img');
-            const vid = document.getElementById('m-vid');
-            const p = redditData[Math.floor(Math.random() * redditData.length)];
+            if (!isLive || redditPosts.length === 0) return;
+            
+            const img = document.getElementById('reddit-image');
+            const p = redditPosts[postIndex];
             
             img.style.display = 'none';
-            vid.style.display = 'none';
-            vid.pause();
+            img.onerror = () => { 
+                console.log("Bildfehler, überspringe:", p.url);
+                postIndex = (postIndex + 1) % redditPosts.length;
+                rotateMedia(); // Sofort nächstes versuchen
+            };
+            img.onload = () => {
+                img.style.display = 'block'; // Erst anzeigen wenn geladen
+            };
 
-            if (p.is_video) {
-                vid.src = p.url;
-                vid.style.display = 'block';
-                vid.play().catch(e => console.log("Autoplay blocked or error:", e));
-            } else {
-                // iOS-Fix: Crossorigin + Referrer für i.redd.it Bilder
-                img.crossOrigin = "anonymous";
-                img.referrerPolicy = "no-referrer";
-                img.src = p.url;
-                img.style.display = 'block';
-            }
+            // FIX: Attribute entfernen für iOS Kompatibilität
+            img.removeAttribute('crossorigin');
+            img.referrerPolicy = "no-referrer";
             
-            mediaInt = setTimeout(rotateMedia, config.imgDur * 1000);
+            img.src = p.url;
+            
+            postIndex = (postIndex + 1) % redditPosts.length;
+            clearTimeout(mediaInt);
+            mediaInt = setTimeout(rotateMedia, cfg.imgDur * 1000);
         }
 
-        function gameEngine() {
-            if(!active) return;
+        async function bootGame() {
+            const btn = document.querySelector('.start-btn'); 
+            const originalText = btn.innerText;
+            btn.innerText = "LADE DATEN...";
+            
+            cfg = {
+                total: parseFloat(document.getElementById('t-total-min').value) * 60,
+                imgDur: parseFloat(document.getElementById('t-img-dur').value)
+            };
+
+            await fetchSources();
+            
+            if(redditPosts.length === 0) { 
+                alert("Konnte keine Bilder laden. Prüfe deine Internetverbindung."); 
+                btn.innerText = originalText; 
+                return; 
+            }
+            
+            document.getElementById('setup-ui').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'flex';
+            
+            isLive = true; startT = Date.now();
+            engine(); cycle('green'); rotateMedia();
+        }
+
+        // --- GAME ENGINE ---
+        function engine() {
+            if (!isLive) return;
             let elapsed = (Date.now() - startT) / 1000;
-            document.getElementById('bar').style.width = Math.min((elapsed / config.total * 100), 100) + "%";
-            
-            if(elapsed >= config.total) {
-                active = false;
-                clearTimeout(mediaInt);
-                clearTimeout(clock);
-                clearInterval(countdownInt);
-                document.body.className = "";
-                document.body.style.backgroundColor = "#007aff";
-                document.getElementById('label').innerText = "ZIEL";
-            } else {
-                requestAnimationFrame(gameEngine);
-            }
+            document.getElementById('progress-bar').style.width = Math.min((elapsed/cfg.total)*100, 100) + "%";
+            if (elapsed >= cfg.total) finish(); else animFrame = requestAnimationFrame(engine);
         }
 
-        function nextPhase(type) {
-            if(!active) return;
-            let dur = Math.random() * (config[type === 'green' ? 'gMax' : 'rMax'] - config[type === 'green' ? 'gMin' : 'rMin']) + config[type === 'green' ? 'gMin' : 'rMin'];
+        function cycle(type) {
+            if (!isLive) return;
+            // Einfachere Zeitlogik für Stabilität
+            let dur = type === 'green' ? (Math.random() * 5 + 4) : (Math.random() * 4 + 3);
             
-            document.body.className = type;
-            const label = document.getElementById('label');
-
-            if(type === 'green') {
+            document.body.className = type + '-active';
+            const label = document.getElementById('status-label');
+            
+            if (type === 'green') {
+                label.innerText = ""; // Kein Text bei Grün, nur Countdown
                 runCountdown(dur);
-                clock = setTimeout(() => nextPhase('red'), dur * 1000);
+                clock = setTimeout(() => cycle('red'), dur * 1000);
             } else {
+                clearInterval(countdownInt);
                 label.innerText = "STOPP";
-                clock = setTimeout(() => nextPhase('green'), dur * 1000);
+                clock = setTimeout(() => cycle('green'), dur * 1000);
             }
         }
 
         function runCountdown(sec) {
-            let left = sec;
-            const update = () => { document.getElementById('label').innerText = Math.ceil(left); };
-            update();
             clearInterval(countdownInt);
+            let left = sec;
+            const label = document.getElementById('status-label');
+            const update = () => { label.innerText = Math.ceil(left); };
+            update();
             countdownInt = setInterval(() => {
                 left -= 0.1;
-                if(left <= 0) { 
-                    clearInterval(countdownInt); 
-                } else { 
-                    update(); 
-                }
+                if(left <= 0) { clearInterval(countdownInt); label.innerText = ""; } else { update(); }
             }, 100);
+        }
+
+        function finish() {
+            isLive = false; clearTimeout(clock); clearTimeout(mediaInt); clearInterval(countdownInt);
+            document.body.className = ''; document.body.style.backgroundColor = "#38bdf8";
+            document.getElementById('status-label').innerText = "ZIEL";
+            document.getElementById('reddit-image').style.display = 'none';
         }
     </script>
 </body>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>RLGL Ultimate (JSON + Proxy Fix)</title>
+    <title>RLGL GitHub Edition</title>
     <style>
         :root {
             --bg: #0b0f19; --card: #161e2d; --accent: #38bdf8;
@@ -67,7 +67,6 @@
             z-index: 1; background: black;
         }
         
-        /* FIX FÜR BILDANZEIGE */
         #reddit-image { 
             width: 100%; height: 100%; object-fit: contain; 
             display: block; opacity: 1; transition: opacity 0.2s;
@@ -126,8 +125,7 @@
         let cfg = {}; let isLive = false; let startT; let clock; let countdownInt; let mediaInt; let animFrame;
         let redditPosts = []; let postIndex = 0;
 
-        // --- DER FIX: JSON API ÜBER PROXY ---
-        // Nutzt die Qualität von JSON, aber funktioniert am PC dank Proxy
+        // --- FETCHING LOGIC FÜR GITHUB PAGES ---
         async function fetchSources() {
             const sourceStr = document.getElementById('t-sources').value || "memes";
             const sources = sourceStr.split(',').map(s => s.trim()).filter(s => s !== "");
@@ -136,14 +134,16 @@
 
             for (let s of sources) {
                 try {
-                    // Wir bauen die URL für die JSON API
+                    // 1. URL vorbereiten
                     const redditUrl = `https://www.reddit.com/r/${s}/hot.json?limit=75`;
                     
-                    // Wir nutzen einen Proxy, der auch große Datenmengen (JSON) sauber durchleitet
-                    // "corsproxy.io" ist oft stabiler als allorigins für JSON
-                    const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(redditUrl);
+                    // 2. Proxy: allorigins.win nutzen (Stabil auf GitHub Pages)
+                    // Wir nutzen 'raw', um direktes JSON zu bekommen
+                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(redditUrl)}`;
                     
                     const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error('Netzwerkfehler');
+                    
                     const data = await response.json();
                     
                     if (data && data.data && data.data.children) {
@@ -151,7 +151,7 @@
                             const p = post.data;
                             let imgUrl = null;
 
-                            // Logik aus deiner Analyse (Priorisiert hohe Qualität)
+                            // Bild-Erkennung
                             if (p.post_hint === 'image' && p.url) {
                                 imgUrl = p.url;
                             } else if (p.preview && p.preview.images && p.preview.images[0]) {
@@ -160,17 +160,21 @@
                                 imgUrl = p.url;
                             }
 
-                            // Nur hinzufügen, wenn URL gültig ist
                             if (imgUrl) {
-                                // WICHTIG: Ersetzt &amp; für iOS
+                                // GITHUB FIX 1: HTTPS erzwingen (gegen Mixed Content Fehler)
+                                if (imgUrl.startsWith('http://')) {
+                                    imgUrl = imgUrl.replace('http://', 'https://');
+                                }
+                                // IOS FIX 2: HTML Entities reparieren
                                 imgUrl = imgUrl.replace(/&amp;/g, '&');
+                                
                                 redditPosts.push({ url: imgUrl });
                             }
                         });
                     }
                 } catch(e) {
-                    console.error("Fehler bei " + s, e);
-                    // Fallback: Wenn Proxy 1 versagt, versuche direkten RSS Fetch (schlechtere Quali, aber geht immer)
+                    console.error("Proxy Fehler bei " + s, e);
+                    // Fallback nur wenn Proxy versagt
                     await fetchRSSFallback(s);
                 }
             }
@@ -178,19 +182,24 @@
             redditPosts.sort(() => Math.random() - 0.5);
         }
 
-        // Sicherheitsnetz: Falls JSON Proxy blockiert ist, nimm RSS
+        // Fallback Methode (RSS via rss2json)
         async function fetchRSSFallback(subreddit) {
             try {
+                console.log("Versuche RSS Fallback...");
                 const rssProxy = `https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.reddit.com%2Fr%2F${subreddit}%2Fhot.rss`;
                 const r = await fetch(rssProxy);
                 const j = await r.json();
                 if(j.items) {
                     j.items.forEach(i => {
                         const m = i.content.match(/src="([^"]+)"/);
-                        if(m) redditPosts.push({ url: m[1].replace(/&amp;/g, '&') });
+                        if(m) {
+                            let url = m[1].replace(/&amp;/g, '&');
+                            if (url.startsWith('http://')) url = url.replace('http://', 'https://');
+                            redditPosts.push({ url: url });
+                        }
                     });
                 }
-            } catch(e) { console.log("Fallback failed"); }
+            } catch(e) { console.log("Fallback auch fehlgeschlagen"); }
         }
 
         function rotateMedia() {
@@ -203,13 +212,13 @@
             img.onerror = () => { 
                 console.log("Bildfehler, überspringe:", p.url);
                 postIndex = (postIndex + 1) % redditPosts.length;
-                rotateMedia(); // Sofort nächstes versuchen
+                rotateMedia(); 
             };
             img.onload = () => {
-                img.style.display = 'block'; // Erst anzeigen wenn geladen
+                img.style.display = 'block'; 
             };
 
-            // FIX: Attribute entfernen für iOS Kompatibilität
+            // WICHTIG: ReferrerPolicy für Reddit Hotlink-Schutz
             img.removeAttribute('crossorigin');
             img.referrerPolicy = "no-referrer";
             
@@ -233,7 +242,7 @@
             await fetchSources();
             
             if(redditPosts.length === 0) { 
-                alert("Konnte keine Bilder laden. Prüfe deine Internetverbindung."); 
+                alert("Fehler: Konnte keine Bilder laden. Auf GitHub kann das am Proxy-Limit liegen. Warte kurz oder lade die Seite neu."); 
                 btn.innerText = originalText; 
                 return; 
             }
@@ -255,14 +264,14 @@
 
         function cycle(type) {
             if (!isLive) return;
-            // Einfachere Zeitlogik für Stabilität
+            // Zufällige Zeitintervalle
             let dur = type === 'green' ? (Math.random() * 5 + 4) : (Math.random() * 4 + 3);
             
             document.body.className = type + '-active';
             const label = document.getElementById('status-label');
             
             if (type === 'green') {
-                label.innerText = ""; // Kein Text bei Grün, nur Countdown
+                label.innerText = "";
                 runCountdown(dur);
                 clock = setTimeout(() => cycle('red'), dur * 1000);
             } else {

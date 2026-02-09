@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>RLGL GitHub Stable</title>
+    <title>RLGL iOS Stable</title>
     <style>
         :root {
             --bg: #0b0f19; --card: #161e2d; --accent: #38bdf8;
@@ -93,8 +93,8 @@
     <div class="setup-container" id="setup-ui">
         <h2>Einstellungen</h2>
         <div class="input-group">
-            <label>Subreddits</label>
-            <input type="text" id="t-sources" value="memes, pics, funny" placeholder="Subreddits...">
+            <label>Subreddits (Kommagetrennt)</label>
+            <input type="text" id="t-sources" value="memes, wholsomememes, pics" placeholder="z.B. memes, pics">
         </div>
         <div class="input-group">
             <label>Gesamtzeit (Minuten)</label>
@@ -125,52 +125,43 @@
         let cfg = {}; let isLive = false; let startT; let clock; let countdownInt; let mediaInt; let animFrame;
         let redditPosts = []; let postIndex = 0;
 
-        // --- FETCHING LOGIC: RSS FALLBACK ONLY ---
-        // Das ist die einzige Methode, die auf GitHub Pages garantiert nicht blockiert wird.
+        // --- NEUE STRATEGIE: MEME-API.COM ---
+        // Diese API ist ein "Wrapper". Sie erledigt die Kommunikation mit Reddit auf einem Server.
+        // Das umgeht alle CORS und iPhone Probleme auf GitHub Pages.
         async function fetchSources() {
             const sourceStr = document.getElementById('t-sources').value || "memes";
-            const sources = sourceStr.split(',').map(s => s.trim()).filter(s => s !== "");
+            // Reinige die Eingabe
+            let subreddits = sourceStr.split(',')
+                .map(s => s.trim())
+                .filter(s => s !== "")
+                .join('+'); // API nutzt Format "memes+pics" für Multi-Subreddits
             
             redditPosts = [];
 
-            for (let s of sources) {
-                try {
-                    // Wir nutzen rss2json.com - das ist ein offizieller Service für genau diesen Zweck.
-                    // Er hat CORS-Header, die GitHub Pages erlauben.
-                    const rssUrl = `https://www.reddit.com/r/${s}/hot/.rss?limit=50`;
-                    const serviceUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
-                    
-                    const response = await fetch(serviceUrl);
-                    const data = await response.json();
-                    
-                    if (data && data.items) {
-                        data.items.forEach(item => {
-                            // RSS liefert HTML im Content. Wir suchen das <img> Tag.
-                            // Das funktioniert IMMER, auch wenn APIs zicken.
-                            const imgRegex = /src="([^"]+)"/;
-                            const match = item.content.match(imgRegex);
-                            
-                            if (match) {
-                                let imgUrl = match[1];
-                                
-                                // WICHTIG: Links bereinigen
-                                imgUrl = imgUrl.replace(/&amp;/g, '&');
-                                
-                                // GitHub Pages erzwingt HTTPS. Wir müssen HTTP Links upgraden.
-                                if (imgUrl.startsWith('http://')) {
-                                    imgUrl = imgUrl.replace('http://', 'https://');
-                                }
-
-                                redditPosts.push({ url: imgUrl });
-                            }
-                        });
-                    }
-                } catch(e) {
-                    console.error("Fehler bei " + s, e);
+            try {
+                // Wir holen 50 Bilder aus den gewählten Subreddits
+                const apiUrl = `https://meme-api.com/gimme/${subreddits}/50`;
+                
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error("API Fehler");
+                
+                const data = await response.json();
+                
+                if (data && data.memes) {
+                    data.memes.forEach(meme => {
+                        // Prüfen ob URL gültig ist (keine Videos/Gifs, API liefert meist jpg/png)
+                        if (meme.url) {
+                            // HTTPS erzwingen für GitHub Pages
+                            let secureUrl = meme.url.replace('http://', 'https://');
+                            redditPosts.push({ url: secureUrl });
+                        }
+                    });
                 }
+            } catch(e) {
+                console.error("Fehler beim Laden:", e);
             }
 
-            // Shuffle
+            // Mischen
             redditPosts.sort(() => Math.random() - 0.5);
         }
 
@@ -191,11 +182,10 @@
                 img.style.display = 'block'; 
             };
 
-            // WICHTIG FÜR REDDIT + GITHUB:
-            // "no-referrer" verhindert, dass Reddit sieht, dass wir von GitHub kommen.
-            // Das umgeht den Hotlink-Schutz.
+            // WICHTIG FÜR IOS: 
+            // Verhindert, dass Reddit den Zugriff blockiert (Hotlink Protection)
             img.referrerPolicy = "no-referrer";
-            img.removeAttribute('crossorigin'); // Crossorigin weg, stört hier nur
+            img.removeAttribute('crossorigin');
             
             img.src = p.url;
             
@@ -207,7 +197,7 @@
         async function bootGame() {
             const btn = document.querySelector('.start-btn'); 
             const originalText = btn.innerText;
-            btn.innerText = "LADE DATEN...";
+            btn.innerText = "VERBINDE SERVER...";
             
             cfg = {
                 total: parseFloat(document.getElementById('t-total-min').value) * 60,
@@ -217,7 +207,7 @@
             await fetchSources();
             
             if(redditPosts.length === 0) { 
-                alert("Keine Bilder gefunden. Das Limit von rss2json könnte erreicht sein oder der Subreddit existiert nicht."); 
+                alert("Keine Bilder gefunden. Bitte prüfe die Schreibweise der Subreddits (z.B. 'memes')."); 
                 btn.innerText = originalText; 
                 return; 
             }
@@ -229,7 +219,7 @@
             engine(); cycle('green'); rotateMedia();
         }
 
-        // --- GAME ENGINE ---
+        // --- SPIEL LOGIK ---
         function engine() {
             if (!isLive) return;
             let elapsed = (Date.now() - startT) / 1000;

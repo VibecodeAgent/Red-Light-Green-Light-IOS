@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>RLGL iPhone Edition</title>
+    <style>
+        :root {
+            --apple-blue: #007aff; --apple-red: #ff3b30; --apple-green: #34c759;
+            --bg: #000; --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg); color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden; transition: background-color 0.5s ease;
+        }
+
+        /* --- IPHONE UI LAYOUT --- */
+        #setup-ui {
+            padding: 2rem; display: flex; flex-direction: column; height: 100%;
+            justify-content: center; box-sizing: border-box;
+            background: radial-gradient(circle at top right, #1c1c1e, #000);
+        }
+
+        h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 2rem; text-align: center; }
+
+        .ios-card {
+            background: var(--glass); backdrop-filter: blur(20px);
+            border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        label { display: block; font-size: 0.75rem; font-weight: 600; color: #8e8e93; text-transform: uppercase; margin-bottom: 0.5rem; }
+        
+        input, select {
+            width: 100%; background: rgba(0,0,0,0.3); border: none;
+            padding: 0.8rem; border-radius: 12px; color: white; font-size: 1rem;
+            outline: none; box-sizing: border-box;
+        }
+
+        .ios-btn {
+            background: var(--apple-blue); color: white; border: none;
+            padding: 1.2rem; border-radius: 18px; font-size: 1.1rem; font-weight: 700;
+            width: 100%; cursor: pointer; transition: transform 0.2s;
+        }
+        .ios-btn:active { transform: scale(0.97); opacity: 0.9; }
+
+        /* --- GAME UI --- */
+        #game-ui { 
+            display: none; width: 100%; height: 100%; 
+            flex-direction: column; justify-content: space-between;
+        }
+
+        .status-display {
+            padding-top: env(safe-area-inset-top, 1rem); text-align: center;
+            z-index: 100; pointer-events: none;
+        }
+
+        .status-text {
+            font-size: clamp(3rem, 15vw, 6rem); font-weight: 900;
+            text-transform: uppercase; text-shadow: 0 0 30px rgba(0,0,0,0.8);
+            margin: 0; line-height: 1;
+        }
+
+        .media-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; display: flex; align-items: center; justify-content: center;
+        }
+        
+        #m-img, #m-vid { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .ios-close {
+            position: absolute; top: calc(env(safe-area-inset-top) + 10px); right: 20px;
+            z-index: 200; background: rgba(0,0,0,0.5); border-radius: 50%;
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+        }
+
+        .ios-progress {
+            width: 90%; margin: 0 auto 30px auto; height: 6px;
+            background: rgba(255,255,255,0.2); border-radius: 10px;
+            z-index: 100; overflow: hidden; position: relative;
+        }
+        #bar { width: 0%; height: 100%; background: white; transition: width 0.1s linear; }
+
+        /* --- ANIMATIONS --- */
+        body.green { background-color: var(--apple-green); }
+        body.red { background-color: var(--apple-red); }
+    </style>
+</head>
+<body>
+
+    <div id="setup-ui">
+        <h1>RLGL iPhone</h1>
+        
+        <div class="ios-card">
+            <label>Subreddit(s)</label>
+            <input type="text" id="inp-sub" placeholder="memes, pics, aww">
+        </div>
+
+        <div class="ios-card">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <label>Gesamtzeit (Min)</label>
+                    <input type="number" id="inp-total" value="1" step="0.5">
+                </div>
+                <div>
+                    <label>Bilder-Dauer</label>
+                    <input type="number" id="inp-imgdur" value="8">
+                </div>
+            </div>
+        </div>
+
+        <div class="ios-card">
+            <label>Medientypen</label>
+            <div style="display: flex; gap: 20px; font-size: 0.9rem;">
+                <label style="color:white;"><input type="checkbox" id="c-img" checked> Bilder</label>
+                <label style="color:white;"><input type="checkbox" id="c-vid" checked> Videos</label>
+            </div>
+        </div>
+
+        <button class="ios-btn" onclick="startIPhoneGame()">STARTEN</button>
+    </div>
+
+    <div id="game-ui">
+        <div class="ios-close" onclick="location.reload()">✕</div>
+        
+        <div class="status-display">
+            <h1 id="label" class="status-text"></h1>
+        </div>
+
+        <div class="media-container">
+            <img id="m-img" style="display:none;">
+            <video id="m-vid" autoplay muted loop playsinline style="display:none;"></video>
+        </div>
+
+        <div class="ios-progress">
+            <div id="bar"></div>
+        </div>
+    </div>
+
+    <script>
+        let redditData = [];
+        let config = {};
+        let active = false;
+        let startT, clock, countdownInt, mediaInt;
+
+        async function startIPhoneGame() {
+            const btn = document.querySelector('.ios-btn');
+            btn.innerText = "LÄDT...";
+            
+            const sub = document.getElementById('inp-sub').value || "memes";
+            const subs = sub.split(',').map(s => s.trim());
+            const useImg = document.getElementById('c-img').checked;
+            const useVid = document.getElementById('c-vid').checked;
+            
+            // --- REDDIT JSON API (iOS-kompatibel) ---
+            for (let s of subs) {
+                try {
+                    const jsonUrl = `https://www.reddit.com/r/${s}/hot.json?limit=50`;
+                    const response = await fetch(jsonUrl);
+                    const data = await response.json();
+                    
+                    data.data.children.forEach(post => {
+                        const p = post.data;
+                        
+                        // Bild-Posts
+                        if (useImg && p.post_hint === 'image' && p.url) {
+                            redditData.push({url: p.url, is_video: false});
+                        }
+                        // Preview-Bilder (als Fallback für andere Post-Typen)
+                        else if (useImg && p.preview && p.preview.images && p.preview.images[0]) {
+                            const imgUrl = p.preview.images[0].source.url.replace(/&amp;/g, '&');
+                            redditData.push({url: imgUrl, is_video: false});
+                        }
+                        // Video-Posts
+                        else if (useVid && p.is_video && p.media && p.media.reddit_video) {
+                            redditData.push({url: p.media.reddit_video.fallback_url, is_video: true});
+                        }
+                    });
+                } catch(e) { 
+                    console.error(`Fehler bei r/${s}:`, e); 
+                }
+            }
+
+            if(redditData.length === 0) {
+                alert("Keine Medien gefunden. Versuche Subreddits wie 'memes' oder 'pics'.");
+                btn.innerText = "STARTEN";
+                return;
+            }
+
+            // Shuffle
+            redditData.sort(() => Math.random() - 0.5);
+
+            config = {
+                total: parseFloat(document.getElementById('inp-total').value) * 60,
+                imgDur: parseFloat(document.getElementById('inp-imgdur').value),
+                gMin: 5, gMax: 12, rMin: 4, rMax: 10
+            };
+
+            document.getElementById('setup-ui').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'flex';
+            active = true;
+            startT = Date.now();
+            
+            gameEngine();
+            nextPhase('green');
+            rotateMedia();
+        }
+
+        function rotateMedia() {
+            if(!active) return;
+            const img = document.getElementById('m-img');
+            const vid = document.getElementById('m-vid');
+            const p = redditData[Math.floor(Math.random() * redditData.length)];
+            
+            img.style.display = 'none';
+            vid.style.display = 'none';
+            vid.pause();
+
+            if (p.is_video) {
+                vid.src = p.url;
+                vid.style.display = 'block';
+                vid.play().catch(e => console.log("Autoplay blocked or error:", e));
+            } else {
+                // iOS-Fix: Crossorigin + Referrer für i.redd.it Bilder
+                img.crossOrigin = "anonymous";
+                img.referrerPolicy = "no-referrer";
+                img.src = p.url;
+                img.style.display = 'block';
+            }
+            
+            mediaInt = setTimeout(rotateMedia, config.imgDur * 1000);
+        }
+
+        function gameEngine() {
+            if(!active) return;
+            let elapsed = (Date.now() - startT) / 1000;
+            document.getElementById('bar').style.width = Math.min((elapsed / config.total * 100), 100) + "%";
+            
+            if(elapsed >= config.total) {
+                active = false;
+                clearTimeout(mediaInt);
+                clearTimeout(clock);
+                clearInterval(countdownInt);
+                document.body.className = "";
+                document.body.style.backgroundColor = "#007aff";
+                document.getElementById('label').innerText = "ZIEL";
+            } else {
+                requestAnimationFrame(gameEngine);
+            }
+        }
+
+        function nextPhase(type) {
+            if(!active) return;
+            let dur = Math.random() * (config[type === 'green' ? 'gMax' : 'rMax'] - config[type === 'green' ? 'gMin' : 'rMin']) + config[type === 'green' ? 'gMin' : 'rMin'];
+            
+            document.body.className = type;
+            const label = document.getElementById('label');
+
+            if(type === 'green') {
+                runCountdown(dur);
+                clock = setTimeout(() => nextPhase('red'), dur * 1000);
+            } else {
+                label.innerText = "STOPP";
+                clock = setTimeout(() => nextPhase('green'), dur * 1000);
+            }
+        }
+
+        function runCountdown(sec) {
+            let left = sec;
+            const update = () => { document.getElementById('label').innerText = Math.ceil(left); };
+            update();
+            clearInterval(countdownInt);
+            countdownInt = setInterval(() => {
+                left -= 0.1;
+                if(left <= 0) { 
+                    clearInterval(countdownInt); 
+                } else { 
+                    update(); 
+                }
+            }, 100);
+        }
+    </script>
+</body>
+</html>

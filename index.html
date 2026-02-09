@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>RLGL GitHub Edition</title>
+    <title>RLGL GitHub Stable</title>
     <style>
         :root {
             --bg: #0b0f19; --card: #161e2d; --accent: #38bdf8;
@@ -20,7 +20,7 @@
             overflow: hidden; -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- SETTINGS PORTAL --- */
+        /* --- SETTINGS UI --- */
         .setup-container { 
             padding: 2rem; border-radius: 2rem; width: 90%; max-width: 500px; 
             background: var(--card); box-shadow: 0 30px 60px rgba(0,0,0,0.9);
@@ -35,7 +35,7 @@
         .input-group { margin-bottom: 1rem; text-align: left; }
         label { font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
         
-        input, select { 
+        input { 
             background: var(--input-bg); border: 2px solid #334155; padding: 0.8rem; 
             border-radius: 0.8rem; color: white; font-size: 1rem; outline: none; width: 100%; box-sizing: border-box;
         }
@@ -125,7 +125,8 @@
         let cfg = {}; let isLive = false; let startT; let clock; let countdownInt; let mediaInt; let animFrame;
         let redditPosts = []; let postIndex = 0;
 
-        // --- FETCHING LOGIC FÜR GITHUB PAGES ---
+        // --- FETCHING LOGIC: RSS FALLBACK ONLY ---
+        // Das ist die einzige Methode, die auf GitHub Pages garantiert nicht blockiert wird.
         async function fetchSources() {
             const sourceStr = document.getElementById('t-sources').value || "memes";
             const sources = sourceStr.split(',').map(s => s.trim()).filter(s => s !== "");
@@ -134,72 +135,43 @@
 
             for (let s of sources) {
                 try {
-                    // 1. URL vorbereiten
-                    const redditUrl = `https://www.reddit.com/r/${s}/hot.json?limit=75`;
+                    // Wir nutzen rss2json.com - das ist ein offizieller Service für genau diesen Zweck.
+                    // Er hat CORS-Header, die GitHub Pages erlauben.
+                    const rssUrl = `https://www.reddit.com/r/${s}/hot/.rss?limit=50`;
+                    const serviceUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
                     
-                    // 2. Proxy: allorigins.win nutzen (Stabil auf GitHub Pages)
-                    // Wir nutzen 'raw', um direktes JSON zu bekommen
-                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(redditUrl)}`;
-                    
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error('Netzwerkfehler');
-                    
+                    const response = await fetch(serviceUrl);
                     const data = await response.json();
                     
-                    if (data && data.data && data.data.children) {
-                        data.data.children.forEach(post => {
-                            const p = post.data;
-                            let imgUrl = null;
-
-                            // Bild-Erkennung
-                            if (p.post_hint === 'image' && p.url) {
-                                imgUrl = p.url;
-                            } else if (p.preview && p.preview.images && p.preview.images[0]) {
-                                imgUrl = p.preview.images[0].source.url;
-                            } else if (p.url && p.url.match(/\.(jpg|jpeg|png|gif)$/i)) {
-                                imgUrl = p.url;
-                            }
-
-                            if (imgUrl) {
-                                // GITHUB FIX 1: HTTPS erzwingen (gegen Mixed Content Fehler)
+                    if (data && data.items) {
+                        data.items.forEach(item => {
+                            // RSS liefert HTML im Content. Wir suchen das <img> Tag.
+                            // Das funktioniert IMMER, auch wenn APIs zicken.
+                            const imgRegex = /src="([^"]+)"/;
+                            const match = item.content.match(imgRegex);
+                            
+                            if (match) {
+                                let imgUrl = match[1];
+                                
+                                // WICHTIG: Links bereinigen
+                                imgUrl = imgUrl.replace(/&amp;/g, '&');
+                                
+                                // GitHub Pages erzwingt HTTPS. Wir müssen HTTP Links upgraden.
                                 if (imgUrl.startsWith('http://')) {
                                     imgUrl = imgUrl.replace('http://', 'https://');
                                 }
-                                // IOS FIX 2: HTML Entities reparieren
-                                imgUrl = imgUrl.replace(/&amp;/g, '&');
-                                
+
                                 redditPosts.push({ url: imgUrl });
                             }
                         });
                     }
                 } catch(e) {
-                    console.error("Proxy Fehler bei " + s, e);
-                    // Fallback nur wenn Proxy versagt
-                    await fetchRSSFallback(s);
+                    console.error("Fehler bei " + s, e);
                 }
             }
 
+            // Shuffle
             redditPosts.sort(() => Math.random() - 0.5);
-        }
-
-        // Fallback Methode (RSS via rss2json)
-        async function fetchRSSFallback(subreddit) {
-            try {
-                console.log("Versuche RSS Fallback...");
-                const rssProxy = `https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.reddit.com%2Fr%2F${subreddit}%2Fhot.rss`;
-                const r = await fetch(rssProxy);
-                const j = await r.json();
-                if(j.items) {
-                    j.items.forEach(i => {
-                        const m = i.content.match(/src="([^"]+)"/);
-                        if(m) {
-                            let url = m[1].replace(/&amp;/g, '&');
-                            if (url.startsWith('http://')) url = url.replace('http://', 'https://');
-                            redditPosts.push({ url: url });
-                        }
-                    });
-                }
-            } catch(e) { console.log("Fallback auch fehlgeschlagen"); }
         }
 
         function rotateMedia() {
@@ -209,8 +181,9 @@
             const p = redditPosts[postIndex];
             
             img.style.display = 'none';
+            
             img.onerror = () => { 
-                console.log("Bildfehler, überspringe:", p.url);
+                console.log("Bildfehler:", p.url);
                 postIndex = (postIndex + 1) % redditPosts.length;
                 rotateMedia(); 
             };
@@ -218,9 +191,11 @@
                 img.style.display = 'block'; 
             };
 
-            // WICHTIG: ReferrerPolicy für Reddit Hotlink-Schutz
-            img.removeAttribute('crossorigin');
+            // WICHTIG FÜR REDDIT + GITHUB:
+            // "no-referrer" verhindert, dass Reddit sieht, dass wir von GitHub kommen.
+            // Das umgeht den Hotlink-Schutz.
             img.referrerPolicy = "no-referrer";
+            img.removeAttribute('crossorigin'); // Crossorigin weg, stört hier nur
             
             img.src = p.url;
             
@@ -242,7 +217,7 @@
             await fetchSources();
             
             if(redditPosts.length === 0) { 
-                alert("Fehler: Konnte keine Bilder laden. Auf GitHub kann das am Proxy-Limit liegen. Warte kurz oder lade die Seite neu."); 
+                alert("Keine Bilder gefunden. Das Limit von rss2json könnte erreicht sein oder der Subreddit existiert nicht."); 
                 btn.innerText = originalText; 
                 return; 
             }
@@ -264,7 +239,6 @@
 
         function cycle(type) {
             if (!isLive) return;
-            // Zufällige Zeitintervalle
             let dur = type === 'green' ? (Math.random() * 5 + 4) : (Math.random() * 4 + 3);
             
             document.body.className = type + '-active';

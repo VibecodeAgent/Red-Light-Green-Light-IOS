@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>RLGL iOS Stable</title>
+    <title>RLGL Master iOS Edition</title>
     <style>
         :root {
             --bg: #0b0f19; --card: #161e2d; --accent: #38bdf8;
@@ -20,128 +20,170 @@
             overflow: hidden; -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- SETTINGS UI --- */
+        /* --- SETTINGS PORTAL --- */
         .setup-container { 
-            padding: 2rem; border-radius: 2rem; width: 90%; max-width: 500px; 
+            padding: 2.5rem; border-radius: 2.5rem; width: 95%; max-width: 550px; 
             background: var(--card); box-shadow: 0 30px 60px rgba(0,0,0,0.9);
-            z-index: 100; text-align: center; max-height: 90vh; overflow-y: auto;
+            z-index: 100; text-align: center; max-height: 92vh; overflow-y: auto;
             backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05);
-            scrollbar-width: none;
+            scrollbar-width: none; box-sizing: border-box;
         }
         .setup-container::-webkit-scrollbar { display: none; }
 
-        h2 { margin: 0 0 1.5rem 0; color: var(--accent); font-size: 1.8rem; font-weight: 800; }
+        h2 { margin: 0 0 1.5rem 0; color: var(--accent); font-size: 2rem; font-weight: 800; }
 
-        .input-group { margin-bottom: 1rem; text-align: left; }
-        label { font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
-        
-        input { 
-            background: var(--input-bg); border: 2px solid #334155; padding: 0.8rem; 
-            border-radius: 0.8rem; color: white; font-size: 1rem; outline: none; width: 100%; box-sizing: border-box;
+        .section-title {
+            font-size: 0.7rem; text-transform: uppercase; color: var(--accent);
+            letter-spacing: 2px; margin: 1.5rem 0 0.8rem 0; text-align: left;
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2); padding-bottom: 0.4rem; font-weight: 900;
         }
-        input:focus { border-color: var(--accent); }
+
+        .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.2rem; text-align: left; }
+        .full-width { grid-column: 1 / -1; }
+
+        .input-group { display: flex; flex-direction: column; gap: 0.4rem; }
+        label { font-size: 0.65rem; color: #94a3b8; font-weight: 800; text-transform: uppercase; }
+        
+        input, select { 
+            background: var(--input-bg); border: 2px solid #334155; padding: 0.9rem; 
+            border-radius: 1rem; color: white; font-size: 1rem; outline: none; transition: all 0.2s;
+            width: 100%; box-sizing: border-box;
+        }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); }
+
+        .checkbox-group { 
+            display: flex; flex-wrap: wrap; justify-content: space-around; background: var(--input-bg); 
+            padding: 0.9rem; border-radius: 1rem; border: 2px solid #334155; gap: 10px;
+        }
+        .checkbox-item { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+        .checkbox-item input { width: 1.2rem; height: 1.2rem; cursor: pointer; appearance: checkbox; -webkit-appearance: checkbox; }
 
         .start-btn { 
             width: 100%; background: var(--accent); color: var(--bg); border: none; 
-            padding: 1.2rem; border-radius: 1rem; font-weight: 900; font-size: 1.2rem; 
-            cursor: pointer; margin-top: 1.5rem; text-transform: uppercase;
+            padding: 1.4rem; border-radius: 1.5rem; font-weight: 900; font-size: 1.3rem; 
+            cursor: pointer; margin-top: 2rem; transition: all 0.3s; text-transform: uppercase;
         }
 
         /* --- GAME UI --- */
         #game-ui { 
             display: none; width: 100vw; height: 100vh; flex-direction: column; 
             justify-content: space-between; align-items: center; position: relative; 
-            z-index: 10; padding: env(safe-area-inset-top, 1rem) 1rem env(safe-area-inset-bottom, 1rem) 1rem; 
+            z-index: 10; padding: env(safe-area-inset-top, 0.5rem) 1rem env(safe-area-inset-bottom, 1rem) 1rem; 
             box-sizing: border-box; 
         }
 
         .btn-close {
             position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(0,0,0,0.4); border: none; 
-            color: white; width: 3rem; height: 3rem; border-radius: 50%; display: flex;
-            justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(5px);
+            color: white; width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex;
+            justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(15px);
         }
+
+        .top-display { z-index: 50; text-align: center; margin-top: 0; text-shadow: 0 2px 20px rgba(0,0,0,0.8); pointer-events: none; }
+        
+        .status-text { font-size: clamp(4.5rem, 22vw, 9.5rem); font-weight: 900; text-transform: uppercase; letter-spacing: -5px; margin: 0; line-height: 0.8; }
 
         .media-background { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; 
             display: flex; justify-content: center; align-items: center; 
-            z-index: 1; background: black;
+            z-index: 1; background: transparent; 
         }
-        
-        #reddit-image { 
-            width: 100%; height: 100%; object-fit: contain; 
-            display: block; opacity: 1; transition: opacity 0.2s;
-        }
+        /* iOS Fix: Object-Fit und Display Block */
+        #reddit-image, #reddit-video { width: 100%; height: 100%; object-fit: contain; display: block; }
 
-        .status-text { 
-            font-size: clamp(4rem, 20vw, 8rem); font-weight: 900; 
-            text-transform: uppercase; margin: 0; line-height: 1; 
-            text-shadow: 0 4px 30px rgba(0,0,0,0.5); z-index: 50; pointer-events: none;
-        }
-
-        .progress-container { 
-            width: 100%; height: 10px; background: rgba(255,255,255,0.2); 
-            border-radius: 10px; overflow: hidden; z-index: 50; 
-        }
-        #progress-bar { width: 0%; height: 100%; background: white; }
+        .bottom-bar { width: 90%; max-width: 650px; z-index: 50; margin-bottom: 0.5rem; }
+        .progress-container { width: 100%; height: 12px; background: rgba(255,255,255,0.3); border-radius: 20px; position: relative; overflow: visible; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        #progress-bar { width: 0%; height: 100%; background: var(--white); border-radius: 20px; transition: width 0.1s linear; }
+        #phase-marker { position: absolute; left: 70%; top: -6px; bottom: -6px; width: 3px; background: white; box-shadow: 0 0 15px white; z-index: 60; border-radius: 4px; }
 
         body.green-active { background-color: var(--green); }
         body.red-active { background-color: var(--red); }
+        .pulse { animation: pulse-anim 0.4s infinite alternate; }
+        @keyframes pulse-anim { from { transform: scale(1); } to { transform: scale(1.1); } }
     </style>
 </head>
 <body class="setup-mode">
 
     <div class="setup-container" id="setup-ui">
         <h2>Einstellungen</h2>
-        <div class="input-group">
-            <label>Subreddits (Kommagetrennt)</label>
-            <input type="text" id="t-sources" value="memes, wholsomememes, pics" placeholder="z.B. memes, pics">
+        
+        <div class="section-title">Inhalte & Filter</div>
+        <div class="settings-grid">
+            <div class="input-group full-width">
+                <label>Quellen (Subreddits)</label>
+                <input type="text" id="t-sources" value="memes, pics, wholesome" placeholder="z.B. memes, pics">
+            </div>
+            <div class="input-group full-width">
+                <label>Filter (API abhängig)</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" id="f-img" checked> Bilder</label>
+                    <label class="checkbox-item"><input type="checkbox" id="f-gif" checked> GIFs</label>
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Wechsel (s)</label>
+                <input type="number" id="t-img-dur" value="8" min="1">
+            </div>
         </div>
-        <div class="input-group">
-            <label>Gesamtzeit (Minuten)</label>
-            <input type="number" id="t-total-min" value="1" step="0.5">
+
+        <div class="section-title">Spielregeln</div>
+        <div class="settings-grid">
+            <div class="input-group full-width">
+                <label>Gesamtzeit (Minuten)</label>
+                <input type="number" id="t-total-min" value="1" step="0.5" min="0.1">
+            </div>
+            <div class="input-group"><label>Grün Min (s)</label><input type="number" id="t-gmin" value="5"></div>
+            <div class="input-group"><label>Grün Max (s)</label><input type="number" id="t-gmax" value="12"></div>
+            <div class="input-group"><label>Rot Min (s)</label><input type="number" id="t-rmin" value="4"></div>
+            <div class="input-group"><label>Rot Max (s)</label><input type="number" id="t-rmax" value="10"></div>
+            <div class="input-group full-width">
+                <label>Phase 2 Intensität</label>
+                <select id="t-wild">
+                    <option value="1.6">Nervös</option>
+                    <option value="3.0" selected>Extrem</option>
+                    <option value="5.5">Wahnsinn</option>
+                </select>
+            </div>
         </div>
-        <div class="input-group">
-            <label>Bildwechsel (Sekunden)</label>
-            <input type="number" id="t-img-dur" value="5">
-        </div>
+
         <button class="start-btn" onclick="bootGame()">SPIEL STARTEN</button>
     </div>
 
     <div id="game-ui">
-        <button class="btn-close" onclick="location.reload()">✕</button>
-        
+        <button class="btn-close" onclick="location.reload()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
         <div class="media-background">
-            <img id="reddit-image" src="" alt="Lade..." style="display:none;">
+            <img id="reddit-image" src="" alt="" style="display:none;">
         </div>
-        
-        <h1 id="status-label" class="status-text"></h1>
-        
-        <div class="progress-container">
-            <div id="progress-bar"></div>
-        </div>
+        <div class="top-display"><h1 id="status-label" class="status-text"></h1></div>
+        <div class="bottom-bar"><div class="progress-container"><div id="phase-marker"></div><div id="progress-bar"></div></div></div>
     </div>
 
     <script>
         let cfg = {}; let isLive = false; let startT; let clock; let countdownInt; let mediaInt; let animFrame;
         let redditPosts = []; let postIndex = 0;
 
-        // --- NEUE STRATEGIE: MEME-API.COM ---
-        // Diese API ist ein "Wrapper". Sie erledigt die Kommunikation mit Reddit auf einem Server.
-        // Das umgeht alle CORS und iPhone Probleme auf GitHub Pages.
+        // --- FETCH STRATEGIE: MEME-API (Wrapper) ---
+        // Dies kombiniert die Sicherheit der API mit den Filtern des UIs
         async function fetchSources() {
             const sourceStr = document.getElementById('t-sources').value || "memes";
-            // Reinige die Eingabe
+            
+            // Formatierung für API: "memes+pics+funny"
             let subreddits = sourceStr.split(',')
                 .map(s => s.trim())
-                .filter(s => s !== "")
-                .join('+'); // API nutzt Format "memes+pics" für Multi-Subreddits
-            
+                .filter(s => s !== "" && !s.startsWith('u/')) // API unterstützt keine User, nur Subs
+                .join('+'); 
+
+            if(subreddits.length === 0) subreddits = "memes";
+
+            const fImg = document.getElementById('f-img').checked;
+            const fGif = document.getElementById('f-gif').checked;
+
             redditPosts = [];
 
             try {
-                // Wir holen 50 Bilder aus den gewählten Subreddits
+                // Lade 50 Posts
                 const apiUrl = `https://meme-api.com/gimme/${subreddits}/50`;
-                
                 const response = await fetch(apiUrl);
                 if (!response.ok) throw new Error("API Fehler");
                 
@@ -149,8 +191,14 @@
                 
                 if (data && data.memes) {
                     data.memes.forEach(meme => {
-                        // Prüfen ob URL gültig ist (keine Videos/Gifs, API liefert meist jpg/png)
-                        if (meme.url) {
+                        if (!meme.url) return;
+                        
+                        // Dateiendung prüfen für Filter
+                        const isGif = meme.url.match(/\.gif$/i);
+                        const isImg = meme.url.match(/\.(jpg|jpeg|png)$/i);
+
+                        // Filtern basierend auf Checkboxen
+                        if ((fGif && isGif) || (fImg && isImg)) {
                             // HTTPS erzwingen für GitHub Pages
                             let secureUrl = meme.url.replace('http://', 'https://');
                             redditPosts.push({ url: secureUrl });
@@ -174,7 +222,7 @@
             img.style.display = 'none';
             
             img.onerror = () => { 
-                console.log("Bildfehler:", p.url);
+                console.log("Bildfehler, skip:", p.url);
                 postIndex = (postIndex + 1) % redditPosts.length;
                 rotateMedia(); 
             };
@@ -182,14 +230,15 @@
                 img.style.display = 'block'; 
             };
 
-            // WICHTIG FÜR IOS: 
-            // Verhindert, dass Reddit den Zugriff blockiert (Hotlink Protection)
+            // WICHTIG FÜR IOS/SAFARI/GITHUB:
+            // Hotlink-Schutz umgehen
             img.referrerPolicy = "no-referrer";
             img.removeAttribute('crossorigin');
             
             img.src = p.url;
             
             postIndex = (postIndex + 1) % redditPosts.length;
+            
             clearTimeout(mediaInt);
             mediaInt = setTimeout(rotateMedia, cfg.imgDur * 1000);
         }
@@ -197,17 +246,22 @@
         async function bootGame() {
             const btn = document.querySelector('.start-btn'); 
             const originalText = btn.innerText;
-            btn.innerText = "VERBINDE SERVER...";
+            btn.innerText = "SERVER VERBINDUNG...";
             
+            const totalSec = parseFloat(document.getElementById('t-total-min').value) * 60;
             cfg = {
-                total: parseFloat(document.getElementById('t-total-min').value) * 60,
-                imgDur: parseFloat(document.getElementById('t-img-dur').value)
+                total: totalSec,
+                imgDur: parseFloat(document.getElementById('t-img-dur').value),
+                gMin: parseFloat(document.getElementById('t-gmin').value), gMax: parseFloat(document.getElementById('t-gmax').value),
+                rMin: parseFloat(document.getElementById('t-rmin').value), rMax: parseFloat(document.getElementById('t-rmax').value),
+                wildness: parseFloat(document.getElementById('t-wild').value), 
+                chaosPoint: totalSec * 0.7
             };
 
             await fetchSources();
             
             if(redditPosts.length === 0) { 
-                alert("Keine Bilder gefunden. Bitte prüfe die Schreibweise der Subreddits (z.B. 'memes')."); 
+                alert("Keine Bilder gefunden. Bitte prüfe die Subreddits (User-Profile 'u/' gehen nicht mit dieser API)."); 
                 btn.innerText = originalText; 
                 return; 
             }
@@ -219,30 +273,11 @@
             engine(); cycle('green'); rotateMedia();
         }
 
-        // --- SPIEL LOGIK ---
         function engine() {
             if (!isLive) return;
             let elapsed = (Date.now() - startT) / 1000;
             document.getElementById('progress-bar').style.width = Math.min((elapsed/cfg.total)*100, 100) + "%";
             if (elapsed >= cfg.total) finish(); else animFrame = requestAnimationFrame(engine);
-        }
-
-        function cycle(type) {
-            if (!isLive) return;
-            let dur = type === 'green' ? (Math.random() * 5 + 4) : (Math.random() * 4 + 3);
-            
-            document.body.className = type + '-active';
-            const label = document.getElementById('status-label');
-            
-            if (type === 'green') {
-                label.innerText = "";
-                runCountdown(dur);
-                clock = setTimeout(() => cycle('red'), dur * 1000);
-            } else {
-                clearInterval(countdownInt);
-                label.innerText = "STOPP";
-                clock = setTimeout(() => cycle('green'), dur * 1000);
-            }
         }
 
         function runCountdown(sec) {
@@ -257,8 +292,31 @@
             }, 100);
         }
 
+        function cycle(type) {
+            if (!isLive) return;
+            let elapsed = (Date.now() - startT) / 1000;
+            let isWild = elapsed >= cfg.chaosPoint;
+            let dur, exp = isWild ? cfg.wildness : 1.0;
+            
+            if (Math.random() < 0.15) {
+                dur = type === 'green' ? Math.random()*(cfg.gMax-cfg.gMin)+cfg.gMin : Math.random()*(cfg.rMax-cfg.rMin)+cfg.rMin;
+            } else {
+                dur = type === 'green' ? cfg.gMin + (cfg.gMax-cfg.gMin)*Math.pow(Math.random(), exp) : cfg.rMin + (cfg.rMax-cfg.rMin)*Math.pow(Math.random(), exp);
+            }
+
+            const label = document.getElementById('status-label');
+            if (type === 'green') {
+                document.body.className = 'green-active'; label.classList.remove('pulse'); runCountdown(dur);
+                clock = setTimeout(() => cycle('red'), dur * 1000);
+            } else {
+                clearInterval(countdownInt); document.body.className = 'red-active'; label.innerText = "STOPP";
+                if (isWild) label.classList.add('pulse');
+                clock = setTimeout(() => cycle('green'), dur * 1000);
+            }
+        }
+
         function finish() {
-            isLive = false; clearTimeout(clock); clearTimeout(mediaInt); clearInterval(countdownInt);
+            isLive = false; cancelAnimationFrame(animFrame); clearTimeout(clock); clearTimeout(mediaInt); clearInterval(countdownInt);
             document.body.className = ''; document.body.style.backgroundColor = "#38bdf8";
             document.getElementById('status-label').innerText = "ZIEL";
             document.getElementById('reddit-image').style.display = 'none';

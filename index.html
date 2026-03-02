@@ -2,12 +2,15 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <title>Red Light Green Light</title>
     <style>
         :root { --bg: #0b0f19; --card: #161e2d; --accent: #38bdf8; --green: #10b981; --red: #ef4444; --white: #f8fafc; --input-bg: rgba(11, 15, 25, 0.9); }
-        html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--white); display: flex; justify-content: center; align-items: center; transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; -webkit-tap-highlight-color: transparent; }
-        .setup-container { padding: 2.5rem; border-radius: 2.5rem; width: 95%; max-width: 550px; background: var(--card); box-shadow: 0 30px 60px rgba(0,0,0,0.9); z-index: 100; text-align: center; max-height: 92vh; overflow-y: auto; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); scrollbar-width: none; box-sizing: border-box; }
+        
+        /* FIX: 100dvh statt 100vh stoppt das Rutschen/Springen der Safari-Adressleiste */
+        html, body { margin: 0; padding: 0; width: 100vw; height: 100dvh; font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--white); display: flex; justify-content: center; align-items: center; transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; -webkit-tap-highlight-color: transparent; }
+        
+        .setup-container { padding: 2.5rem; border-radius: 2.5rem; width: 95%; max-width: 550px; background: var(--card); box-shadow: 0 30px 60px rgba(0,0,0,0.9); z-index: 100; text-align: center; max-height: 92dvh; overflow-y: auto; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); scrollbar-width: none; box-sizing: border-box; }
         .setup-container::-webkit-scrollbar { display: none; }
         h2 { margin: 0 0 1.5rem 0; color: var(--accent); font-size: 2rem; font-weight: 800; }
         .section-title { font-size: 0.7rem; text-transform: uppercase; color: var(--accent); letter-spacing: 2px; margin: 1.5rem 0 0.8rem 0; text-align: left; border-bottom: 1px solid rgba(56, 189, 248, 0.2); padding-bottom: 0.4rem; font-weight: 900; }
@@ -22,29 +25,28 @@
         .checkbox-item input { width: 1.2rem; height: 1.2rem; cursor: pointer; appearance: checkbox; -webkit-appearance: checkbox; }
         .start-btn { width: 100%; background: var(--accent); color: var(--bg); border: none; padding: 1.4rem; border-radius: 1.5rem; font-weight: 900; font-size: 1.3rem; cursor: pointer; margin-top: 2rem; transition: all 0.3s; text-transform: uppercase; }
         
-        #game-ui { display: none; width: 100vw; height: 100vh; flex-direction: column; justify-content: space-between; align-items: center; position: relative; z-index: 10; padding: 0 1rem env(safe-area-inset-bottom, 1rem) 1rem; box-sizing: border-box; }
+        /* FIX: 100dvh auch hier. */
+        #game-ui { display: none; width: 100vw; height: 100dvh; flex-direction: column; justify-content: space-between; align-items: center; position: relative; z-index: 10; padding: 0 1rem env(safe-area-inset-bottom, 1.5rem) 1rem; box-sizing: border-box; }
         
-        /* FIX: Button tiefer und stabiler */
-        .btn-close { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 2.5rem); left: 1.5rem; background: rgba(0,0,0,0.4); border: none; color: white; width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(15px); }
-        
+        .btn-close { position: absolute; top: calc(env(safe-area-inset-top, 25px) + 1.5rem); left: 1.5rem; background: rgba(0,0,0,0.4); border: none; color: white; width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(15px); }
         .btn-edge { position: absolute; top: calc(50% - 2.2rem); left: 1.2rem; transform: translateY(-50%); background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: rgba(239, 68, 68, 0.6); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
         .btn-edge:active { transform: translateY(-50%) scale(0.85); background: rgba(239, 68, 68, 0.4); color: #ffffff; border-color: rgba(239, 68, 68, 0.6); }
         .btn-skip { position: absolute; top: calc(50% + 2.2rem); left: 1.2rem; transform: translateY(-50%); background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.4); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
         .btn-skip:active { transform: translateY(-50%) scale(0.85); background: rgba(0, 0, 0, 0.4); color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.2); }
 
-        /* FIX: Padding statt Margin & max() Funktion für bombensicheren Abstand */
+        /* FIX: Perfekt ausbalancierter Abstand. 85px ist der Sweet Spot für das iPhone 17 */
         .top-display { 
             z-index: 50; 
             text-align: center; 
-            padding-top: max(env(safe-area-inset-top, 25px), 50px); 
+            padding-top: max(env(safe-area-inset-top, 40px), 85px); 
             text-shadow: 0 2px 20px rgba(0,0,0,0.8); 
             pointer-events: none; 
             width: 90%; 
         }
         
-        /* FIX: Texte größer & Line-Height für Stabilität erhöht */
+        /* FIX: Schriftgrößen angehoben (Min und Max) für mehr Präsenz */
         .status-text { 
-            font-size: clamp(4.5rem, 16vw, 8.5rem); 
+            font-size: clamp(5rem, 18vw, 9.5rem); 
             font-weight: 900; 
             text-transform: uppercase; 
             letter-spacing: -2px; 
@@ -54,13 +56,15 @@
         }
 
         .status-text.adaptive {
-            font-size: clamp(3.2rem, 11vw, 5.5rem);
+            font-size: clamp(3.8rem, 13vw, 6.5rem);
             letter-spacing: -1px;
             line-height: 1.1;
         }
 
-        .media-background { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; z-index: 1; background: transparent; }
-        #reddit-image, #reddit-video { width: 100%; height: 100%; object-fit: contain; }
+        /* FIX: Bilder absolut fixiert, damit sie das Layout beim Wechsel nicht zerreißen */
+        .media-background { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; z-index: 1; background: transparent; }
+        #reddit-image, #reddit-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
+        
         .bottom-bar { width: 90%; max-width: 650px; z-index: 50; margin-bottom: 1.5rem; }
         .progress-container { width: 100%; height: 12px; background: rgba(255,255,255,0.3); border-radius: 20px; position: relative; overflow: visible; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
         #progress-bar { width: 0%; height: 100%; background: var(--white); border-radius: 20px; transition: width 0.1s linear; }
@@ -514,8 +518,7 @@
                             isPostGame = true;
                             label.classList.remove('adaptive');
                             
-                            /* FIX: End-Texte inkl. Ruin-Satz einen Tick größer & stabilisiert */
-                            label.style.fontSize = "clamp(2.8rem, 9vw, 4.5rem)";
+                            label.style.fontSize = "clamp(3.5rem, 10vw, 5rem)";
                             label.style.letterSpacing = "1px";
                             label.style.opacity = "1"; 
                             label.style.textShadow = "0px 4px 15px rgba(0,0,0,0.9), 0px 0px 8px rgba(0,0,0,0.9)"; 

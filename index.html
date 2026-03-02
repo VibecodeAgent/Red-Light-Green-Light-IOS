@@ -7,7 +7,6 @@
     <style>
         :root { --bg: #0b0f19; --card: #161e2d; --accent: #38bdf8; --green: #10b981; --red: #ef4444; --white: #f8fafc; --input-bg: rgba(11, 15, 25, 0.9); }
         
-        /* FIX: 100dvh statt 100vh stoppt das Rutschen/Springen der Safari-Adressleiste */
         html, body { margin: 0; padding: 0; width: 100vw; height: 100dvh; font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--white); display: flex; justify-content: center; align-items: center; transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; -webkit-tap-highlight-color: transparent; }
         
         .setup-container { padding: 2.5rem; border-radius: 2.5rem; width: 95%; max-width: 550px; background: var(--card); box-shadow: 0 30px 60px rgba(0,0,0,0.9); z-index: 100; text-align: center; max-height: 92dvh; overflow-y: auto; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); scrollbar-width: none; box-sizing: border-box; }
@@ -33,24 +32,20 @@
         .btn-skip { position: absolute; top: calc(50% + 2.2rem); left: 1.2rem; transform: translateY(-50%); background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.4); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
         .btn-skip:active { transform: translateY(-50%) scale(0.85); background: rgba(0, 0, 0, 0.4); color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.2); }
 
-        /* FIX: Absolute Positionierung & minimaler Puffer von wenigen mm */
+        /* FIX: Wieder im Layout verankert, Notch-Abstand auf genau 10px (paar Millimeter) fixiert */
         .top-display { 
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
             z-index: 50; 
             text-align: center; 
-            /* 4mm (ca 25px) ist der perfekte 'paar mm' Puffer für die Notch */
-            padding-top: max(env(safe-area-inset-top, 25px), 25px); 
+            margin-top: calc(env(safe-area-inset-top, 25px) + 10px); 
             text-shadow: 0 2px 20px rgba(0,0,0,0.8); 
             pointer-events: none; 
             width: 90%; 
+            flex-shrink: 0; /* Verhindert, dass das Bild den Text zerquetscht */
         }
         
-        /* FIX: Texte größer & stabilisiert */
+        /* FIX: Texte kleiner, eleganter und stabiler */
         .status-text { 
-            font-size: clamp(5rem, 18vw, 9.5rem); 
+            font-size: clamp(3.5rem, 12vw, 6rem); 
             font-weight: 900; 
             text-transform: uppercase; 
             letter-spacing: -2px; 
@@ -60,16 +55,16 @@
         }
 
         .status-text.adaptive {
-            font-size: clamp(3.8rem, 13vw, 6.5rem);
+            font-size: clamp(2.5rem, 9vw, 4.5rem);
             letter-spacing: -1px;
             line-height: 1.1;
         }
 
-        /* FIX: Bilder absolut fixiert, damit sie das Layout beim Wechsel nicht zerreißen */
         .media-background { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; z-index: 1; background: transparent; }
         #reddit-image, #reddit-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
         
-        .bottom-bar { width: 90%; max-width: 650px; z-index: 50; margin-bottom: 1.5rem; }
+        /* FIX: Balken unten gesichert durch flex-shrink */
+        .bottom-bar { width: 90%; max-width: 650px; z-index: 50; margin-bottom: 1.5rem; flex-shrink: 0; }
         .progress-container { width: 100%; height: 12px; background: rgba(255,255,255,0.3); border-radius: 20px; position: relative; overflow: visible; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
         #progress-bar { width: 0%; height: 100%; background: var(--white); border-radius: 20px; transition: width 0.1s linear; }
         #phase-marker { position: absolute; left: 60%; top: -6px; bottom: -6px; width: 3px; background: white; box-shadow: 0 0 15px white; z-index: 60; border-radius: 4px; transition: opacity 0.3s; }

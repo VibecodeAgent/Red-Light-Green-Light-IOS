@@ -24,21 +24,18 @@
         .checkbox-item input { width: 1.2rem; height: 1.2rem; cursor: pointer; appearance: checkbox; -webkit-appearance: checkbox; }
         .start-btn { width: 100%; background: var(--accent); color: var(--bg); border: none; padding: 1.4rem; border-radius: 1.5rem; font-weight: 900; font-size: 1.3rem; cursor: pointer; margin-top: 2rem; transition: all 0.3s; text-transform: uppercase; }
         
-        /* FIX: UI Container ist jetzt auf das Display festgenagelt */
         #game-ui { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 10; box-sizing: border-box; }
         
-        /* UI Buttons */
-        .btn-close { position: absolute; top: calc(env(safe-area-inset-top, 25px) + 15px); left: 1.5rem; background: rgba(0,0,0,0.4); border: none; color: white; width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(15px); }
-        .btn-edge { position: absolute; top: calc(50% - 2.2rem); left: 1.2rem; transform: translateY(-50%); background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: rgba(239, 68, 68, 0.6); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
+        /* FIX: Alle UI Buttons weiter nach links (0.8rem ist der perfekte Sicherheitsabstand) */
+        .btn-close { position: absolute; top: calc(env(safe-area-inset-top, 25px) + 15px); left: max(env(safe-area-inset-left, 0px), 0.8rem); background: rgba(0,0,0,0.4); border: none; color: white; width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(15px); }
+        .btn-edge { position: absolute; top: calc(50% - 2.2rem); left: max(env(safe-area-inset-left, 0px), 0.8rem); transform: translateY(-50%); background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: rgba(239, 68, 68, 0.6); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
         .btn-edge:active { transform: translateY(-50%) scale(0.85); background: rgba(239, 68, 68, 0.4); color: #ffffff; border-color: rgba(239, 68, 68, 0.6); }
-        .btn-skip { position: absolute; top: calc(50% + 2.2rem); left: 1.2rem; transform: translateY(-50%); background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.4); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
+        .btn-skip { position: absolute; top: calc(50% + 2.2rem); left: max(env(safe-area-inset-left, 0px), 0.8rem); transform: translateY(-50%); background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.4); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
         .btn-skip:active { transform: translateY(-50%) scale(0.85); background: rgba(0, 0, 0, 0.4); color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.2); }
 
-        /* FIX: Bild/Video liegen immer exakt im Hintergrund */
         .media-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; background: transparent; }
         #reddit-image, #reddit-video { max-width: 100%; max-height: 100%; object-fit: contain; }
 
-        /* FIX: Top-Display ist absolut an der Notch plus 15px Puffer fixiert */
         .top-display { 
             position: absolute;
             top: calc(env(safe-area-inset-top, 25px) + 15px);
@@ -50,7 +47,7 @@
             pointer-events: none; 
         }
         
-        /* FIX: Einheitliche, elegante Textgröße */
+        /* Basis-Klasse (gilt für HANDS OFF und Endtexte) */
         .status-text { 
             font-size: clamp(3rem, 12vw, 5.5rem); 
             font-weight: 900; 
@@ -58,7 +55,12 @@
             letter-spacing: -2px; 
             margin: 0; 
             line-height: 1.1; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            transition: font-size 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+
+        /* FIX: Neue, isolierte Klasse NUR für den Countdown (ca. 50% größer) */
+        .status-text.countdown {
+            font-size: clamp(4.5rem, 18vw, 8.25rem);
         }
 
         .status-text.adaptive {
@@ -67,7 +69,6 @@
             line-height: 1.1;
         }
 
-        /* FIX: Progress-Bar ist absolut unten fixiert, weit weg vom Rest */
         .bottom-bar { 
             position: absolute; 
             bottom: calc(env(safe-area-inset-bottom, 15px) + 20px); 
@@ -361,7 +362,7 @@
             
             document.getElementById('phase-marker').style.opacity = cfg.wildModeActive ? '1' : '0';
             document.getElementById('setup-ui').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'block'; /* Geändert auf block, wegen absolutem Layout */
+            document.getElementById('game-ui').style.display = 'block';
             
             isLive = true; startT = Date.now();
             engine(); cycle('green'); rotateMedia();
@@ -402,6 +403,9 @@
             document.body.className = 'red-active'; 
             const label = document.getElementById('status-label');
             
+            /* FIX: Isolation des Countdowns wird hier wieder aufgehoben */
+            label.classList.remove('countdown');
+
             if (isForcedEdge) {
                 label.innerHTML = "DON'T YOU <br> DARE CUM"; 
                 label.classList.add('adaptive'); 
@@ -449,6 +453,9 @@
                 document.body.className = 'green-active'; 
                 label.classList.remove('pulse'); 
                 label.classList.remove('adaptive'); 
+                
+                /* FIX: Nur der grüne Countdown bekommt die vergrößerte Klasse */
+                label.classList.add('countdown');
 
                 if (cfg.audioActive) {
                     aSpace.pause(); aSpace.currentTime = 0; 
@@ -490,7 +497,9 @@
             
             const label = document.getElementById('status-label');
             label.innerHTML = ""; 
-            label.classList.remove('pulse');
+            
+            /* FIX: Aufräumen der CSS-Klassen für ein sauberes Ende */
+            label.classList.remove('pulse', 'countdown');
 
             let currentWinChance = 0.20 + (edgeCount * 0.05);
             if (currentWinChance > 0.80) {
@@ -532,7 +541,6 @@
                             isPostGame = true;
                             label.classList.remove('adaptive');
                             
-                            /* FIX: Endtext ist jetzt identisch mit der normalen adaptiven Textgröße */
                             label.style.fontSize = "clamp(2.5rem, 9vw, 4rem)";
                             label.style.letterSpacing = "1px";
                             label.style.opacity = "1"; 
@@ -567,7 +575,7 @@
             document.body.style.backgroundColor = ""; 
             
             const label = document.getElementById('status-label');
-            label.classList.remove('adaptive');
+            label.classList.remove('adaptive', 'countdown'); /* UPDATE */
             label.style.fontSize = "";
             label.style.letterSpacing = "";
             label.style.opacity = "";

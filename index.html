@@ -25,7 +25,6 @@
         .checkbox-item input { width: 1.2rem; height: 1.2rem; cursor: pointer; appearance: checkbox; -webkit-appearance: checkbox; }
         .start-btn { width: 100%; background: var(--accent); color: var(--bg); border: none; padding: 1.4rem; border-radius: 1.5rem; font-weight: 900; font-size: 1.3rem; cursor: pointer; margin-top: 2rem; transition: all 0.3s; text-transform: uppercase; }
         
-        /* FIX: 100dvh auch hier. */
         #game-ui { display: none; width: 100vw; height: 100dvh; flex-direction: column; justify-content: space-between; align-items: center; position: relative; z-index: 10; padding: 0 1rem env(safe-area-inset-bottom, 1.5rem) 1rem; box-sizing: border-box; }
         
         .btn-close { position: absolute; top: calc(env(safe-area-inset-top, 25px) + 1.5rem); left: 1.5rem; background: rgba(0,0,0,0.4); border: none; color: white; width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(15px); }
@@ -34,17 +33,22 @@
         .btn-skip { position: absolute; top: calc(50% + 2.2rem); left: 1.2rem; transform: translateY(-50%); background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.4); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
         .btn-skip:active { transform: translateY(-50%) scale(0.85); background: rgba(0, 0, 0, 0.4); color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.2); }
 
-        /* FIX: Perfekt ausbalancierter Abstand. 85px ist der Sweet Spot für das iPhone 17 */
+        /* FIX: Absolute Positionierung & minimaler Puffer von wenigen mm */
         .top-display { 
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 50; 
             text-align: center; 
-            padding-top: max(env(safe-area-inset-top, 40px), 85px); 
+            /* 4mm (ca 25px) ist der perfekte 'paar mm' Puffer für die Notch */
+            padding-top: max(env(safe-area-inset-top, 25px), 25px); 
             text-shadow: 0 2px 20px rgba(0,0,0,0.8); 
             pointer-events: none; 
             width: 90%; 
         }
         
-        /* FIX: Schriftgrößen angehoben (Min und Max) für mehr Präsenz */
+        /* FIX: Texte größer & stabilisiert */
         .status-text { 
             font-size: clamp(5rem, 18vw, 9.5rem); 
             font-weight: 900; 

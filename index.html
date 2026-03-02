@@ -22,17 +22,19 @@
         .checkbox-item input { width: 1.2rem; height: 1.2rem; cursor: pointer; appearance: checkbox; -webkit-appearance: checkbox; }
         .start-btn { width: 100%; background: var(--accent); color: var(--bg); border: none; padding: 1.4rem; border-radius: 1.5rem; font-weight: 900; font-size: 1.3rem; cursor: pointer; margin-top: 2rem; transition: all 0.3s; text-transform: uppercase; }
         
-        #game-ui { display: none; width: 100vw; height: 100vh; flex-direction: column; justify-content: space-between; align-items: center; position: relative; z-index: 10; padding: env(safe-area-inset-top, 0.5rem) 1rem env(safe-area-inset-bottom, 1rem) 1rem; box-sizing: border-box; }
+        #game-ui { display: none; width: 100vw; height: 100vh; flex-direction: column; justify-content: space-between; align-items: center; position: relative; z-index: 10; padding: env(safe-area-inset-top, 1rem) 1rem env(safe-area-inset-bottom, 1rem) 1rem; box-sizing: border-box; }
         
-        .btn-close { position: absolute; top: 1.5rem; left: 1.5rem; background: rgba(0,0,0,0.4); border: none; color: white; width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(15px); }
+        /* OPTIMIERT FÜR IPHONE NOTCH: Nutzt env safe-area */
+        .btn-close { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 1.5rem); left: 1.5rem; background: rgba(0,0,0,0.4); border: none; color: white; width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(15px); }
+        
         .btn-edge { position: absolute; top: calc(50% - 2.2rem); left: 1.2rem; transform: translateY(-50%); background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: rgba(239, 68, 68, 0.6); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
         .btn-edge:active { transform: translateY(-50%) scale(0.85); background: rgba(239, 68, 68, 0.4); color: #ffffff; border-color: rgba(239, 68, 68, 0.6); }
         .btn-skip { position: absolute; top: calc(50% + 2.2rem); left: 1.2rem; transform: translateY(-50%); background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.4); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
         .btn-skip:active { transform: translateY(-50%) scale(0.85); background: rgba(0, 0, 0, 0.4); color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.2); }
 
-        .top-display { z-index: 50; text-align: center; margin-top: calc(env(safe-area-inset-top, 25px) + 20px); text-shadow: 0 2px 20px rgba(0,0,0,0.8); pointer-events: none; width: 90%; }
+        /* OPTIMIERT FÜR IPHONE NOTCH: Mehr Abstand nach oben basierend auf Safe Area */
+        .top-display { z-index: 50; text-align: center; margin-top: calc(env(safe-area-inset-top, 20px) + 25px); text-shadow: 0 2px 20px rgba(0,0,0,0.8); pointer-events: none; width: 90%; }
         
-        /* Die absolut stabile Typografie-Logik für Zahlen und HANDS OFF */
         .status-text { 
             font-size: clamp(3.5rem, 14vw, 7rem); 
             font-weight: 900; 
@@ -43,7 +45,6 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
         }
 
-        /* NEU: Adaptive Klasse für Sätze (Edge & Roulette), damit nichts über den Rand bricht */
         .status-text.adaptive {
             font-size: clamp(2.5rem, 9vw, 4.5rem);
             letter-spacing: -1px;
@@ -51,7 +52,7 @@
 
         .media-background { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; z-index: 1; background: transparent; }
         #reddit-image, #reddit-video { width: 100%; height: 100%; object-fit: contain; }
-        .bottom-bar { width: 90%; max-width: 650px; z-index: 50; margin-bottom: 0.5rem; }
+        .bottom-bar { width: 90%; max-width: 650px; z-index: 50; margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem); }
         .progress-container { width: 100%; height: 12px; background: rgba(255,255,255,0.3); border-radius: 20px; position: relative; overflow: visible; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
         #progress-bar { width: 0%; height: 100%; background: var(--white); border-radius: 20px; transition: width 0.1s linear; }
         #phase-marker { position: absolute; left: 60%; top: -6px; bottom: -6px; width: 3px; background: white; box-shadow: 0 0 15px white; z-index: 60; border-radius: 4px; transition: opacity 0.3s; }
@@ -376,10 +377,10 @@
             
             if (isForcedEdge) {
                 label.innerHTML = "DON'T YOU <br> DARE CUM"; 
-                label.classList.add('adaptive'); // Schützt vor Zeilenumbruch-Chaos auf schmalen Screens
+                label.classList.add('adaptive'); 
             } else {
                 label.innerHTML = "HANDS<br>OFF";
-                label.classList.remove('adaptive'); // Massive Größe für das kurze Hands off
+                label.classList.remove('adaptive'); 
             }
             
             let elapsed = (Date.now() - startT) / 1000;
@@ -420,7 +421,7 @@
             if (type === 'green') {
                 document.body.className = 'green-active'; 
                 label.classList.remove('pulse'); 
-                label.classList.remove('adaptive'); // Säubert die Formatierung im grünen Modus
+                label.classList.remove('adaptive'); 
 
                 if (cfg.audioActive) {
                     aSpace.pause(); aSpace.currentTime = 0; 
@@ -483,7 +484,6 @@
                 const finalRuinText = "BE A GOOD BOY<br>AND RUIN IT<br>FOR ME";
                 const finalOutcome = isWin ? (isRuin ? finalRuinText : spinWinText) : spinLoseText; 
 
-                // Nutze die mittlere adaptive Klasse für den Spin, damit es sauber auf den Screen passt
                 label.classList.add('adaptive');
 
                 function spinWheel() {
@@ -496,7 +496,6 @@
                         currentSpeed *= slowdownFactor;
                         setTimeout(spinWheel, currentSpeed);
                     } else {
-                        // Der finale Moment
                         label.innerHTML = finalOutcome;
                         label.style.color = "var(--white)"; 
                         
@@ -506,11 +505,10 @@
                             isPostGame = true;
                             label.classList.remove('adaptive');
                             
-                            // === DIE EXTREM LESBARE, ABER SAUBERE GEWINN-TYPOGRAFIE ===
                             label.style.fontSize = "clamp(1.5rem, 5vw, 2.5rem)";
                             label.style.letterSpacing = "1px";
-                            label.style.opacity = "1"; // Wieder voll sichtbar
-                            label.style.textShadow = "0px 4px 15px rgba(0,0,0,0.9), 0px 0px 8px rgba(0,0,0,0.9)"; // Brutaler Kontrast zum Bild dahinter
+                            label.style.opacity = "1"; 
+                            label.style.textShadow = "0px 4px 15px rgba(0,0,0,0.9), 0px 0px 8px rgba(0,0,0,0.9)"; 
                             label.style.lineHeight = "1.2";
                             label.innerHTML = finalOutcome.replace(/<br>/g, ' '); 
 
@@ -540,7 +538,6 @@
             document.querySelector('.bottom-bar').style.display = 'block';
             document.body.style.backgroundColor = ""; 
             
-            // Alles auf Werkszustand setzen
             const label = document.getElementById('status-label');
             label.classList.remove('adaptive');
             label.style.fontSize = "";

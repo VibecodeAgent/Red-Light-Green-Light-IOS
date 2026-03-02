@@ -21,10 +21,17 @@
         .checkbox-item { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
         .checkbox-item input { width: 1.2rem; height: 1.2rem; cursor: pointer; appearance: checkbox; -webkit-appearance: checkbox; }
         .start-btn { width: 100%; background: var(--accent); color: var(--bg); border: none; padding: 1.4rem; border-radius: 1.5rem; font-weight: 900; font-size: 1.3rem; cursor: pointer; margin-top: 2rem; transition: all 0.3s; text-transform: uppercase; }
+        
         #game-ui { display: none; width: 100vw; height: 100vh; flex-direction: column; justify-content: space-between; align-items: center; position: relative; z-index: 10; padding: env(safe-area-inset-top, 0.5rem) 1rem env(safe-area-inset-bottom, 1rem) 1rem; box-sizing: border-box; }
-        .btn-close { position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(0,0,0,0.4); border: none; color: white; width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(15px); }
+        
+        .btn-close { position: absolute; top: 1.5rem; left: 1.5rem; background: rgba(0,0,0,0.4); border: none; color: white; width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(15px); }
+        .btn-edge { position: absolute; top: calc(50% - 2.2rem); left: 1.2rem; transform: translateY(-50%); background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: rgba(239, 68, 68, 0.6); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
+        .btn-edge:active { transform: translateY(-50%) scale(0.85); background: rgba(239, 68, 68, 0.4); color: #ffffff; border-color: rgba(239, 68, 68, 0.6); }
+        .btn-skip { position: absolute; top: calc(50% + 2.2rem); left: 1.2rem; transform: translateY(-50%); background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.4); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
+        .btn-skip:active { transform: translateY(-50%) scale(0.85); background: rgba(0, 0, 0, 0.4); color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.2); }
+
         .top-display { z-index: 50; text-align: center; margin-top: calc(env(safe-area-inset-top, 25px) + 20px); text-shadow: 0 2px 20px rgba(0,0,0,0.8); pointer-events: none; }
-        .status-text { font-size: clamp(4.5rem, 22vw, 8.5rem); font-weight: 900; text-transform: uppercase; letter-spacing: -5px; margin: 0; line-height: 0.8; }
+        .status-text { font-size: clamp(4.5rem, 22vw, 8.5rem); font-weight: 900; text-transform: uppercase; letter-spacing: -5px; margin: 0; line-height: 0.8; transition: font-size 0.3s; }
         .media-background { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; z-index: 1; background: transparent; }
         #reddit-image, #reddit-video { width: 100%; height: 100%; object-fit: contain; }
         .bottom-bar { width: 90%; max-width: 650px; z-index: 50; margin-bottom: 0.5rem; }
@@ -124,9 +131,18 @@
     </div>
 
     <div id="game-ui">
-        <button class="btn-close" onclick="location.reload()">
+        <button class="btn-close" onclick="location.reload()" aria-label="Beenden">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
+        
+        <button class="btn-edge" onclick="triggerEdge(event)" aria-label="Notbremse / Edge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        </button>
+
+        <button class="btn-skip" onclick="skipMedia(event)" aria-label="Nächstes Medium">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+
         <div class="media-background">
             <img id="reddit-image" src="" alt="" style="display:none;">
             <video id="reddit-video" autoplay muted loop playsinline style="display:none;"></video>
@@ -138,6 +154,8 @@
     <script>
         let cfg = {}; let isLive = false; let startT; let clock; let countdownInt; let mediaInt; let animFrame;
         let redditPosts = []; let postIndex = 0;
+        
+        let edgeCount = 0; 
 
         const aGreen = document.getElementById('sfx-green');
         const aRed = document.getElementById('sfx-red');
@@ -206,6 +224,25 @@
             redditPosts = unique;
         }
 
+        function skipMedia(event) {
+            if (event) event.stopPropagation(); 
+            if (!isLive || redditPosts.length === 0) return;
+            clearTimeout(mediaInt);
+            rotateMedia();
+        }
+
+        function triggerEdge(event) {
+            if (event) event.stopPropagation(); 
+            if (!isLive) return;
+            if (document.body.classList.contains('red-active')) return;
+
+            edgeCount++;
+
+            clearTimeout(clock);
+            clearInterval(countdownInt);
+            executeRedPhase(cfg.longBreakDur, true);
+        }
+
         function rotateMedia() {
             if (!isLive || redditPosts.length === 0) return;
             
@@ -235,13 +272,14 @@
         }
 
         async function bootGame() {
-            // 1. Der SOFORTIGE Audio-Unlock (Synchron beim Klick, keine asynchrone Race Condition mehr)
+            edgeCount = 0;
+
             const audioWantsActive = document.getElementById('f-audio').checked;
             if (audioWantsActive) {
                 [aGreen, aRed, aSpace].forEach(a => {
-                    a.play().catch(()=>{}); // Signalisiert dem Browser: "Nutzer will Audio!"
-                    a.pause();              // Sofortiges Abwürgen, bevor das Audio überhaupt lädt
-                    a.currentTime = 0;      // Sauberer Reset
+                    a.play().catch(()=>{});
+                    a.pause();              
+                    a.currentTime = 0;      
                 });
             }
 
@@ -283,7 +321,12 @@
             if (!isLive) return;
             let elapsed = (Date.now() - startT) / 1000;
             document.getElementById('progress-bar').style.width = Math.min((elapsed/cfg.total)*100, 100) + "%";
-            if (elapsed >= cfg.total) finish(); else animFrame = requestAnimationFrame(engine);
+            
+            if (elapsed >= cfg.total) {
+                finish(); 
+            } else {
+                animFrame = requestAnimationFrame(engine);
+            }
         }
 
         function runCountdown(duration) {
@@ -302,6 +345,29 @@
             };
             update();
             countdownInt = setInterval(update, 100);
+        }
+
+        function executeRedPhase(dur, isForcedEdge = false) {
+            clearInterval(countdownInt); 
+            document.body.className = 'red-active'; 
+            const label = document.getElementById('status-label');
+            
+            label.innerText = isForcedEdge ? "EDGE" : "STOPP";
+            
+            let elapsed = (Date.now() - startT) / 1000;
+            let isWild = cfg.wildModeActive && (elapsed >= cfg.chaosPoint);
+            if (isWild || isForcedEdge) label.classList.add('pulse'); 
+            
+            if (cfg.audioActive) {
+                aSpace.pause(); aSpace.currentTime = 0;
+                aGreen.pause(); aGreen.currentTime = 0; 
+                
+                aRed.currentTime = 0; 
+                aRed.play().catch(()=>{});
+            }
+
+            runCountdown(dur);
+            clock = setTimeout(() => cycle('green'), dur * 1000);
         }
 
         function cycle(type) {
@@ -339,25 +405,16 @@
                 runCountdown(dur);
                 clock = setTimeout(() => cycle('red'), dur * 1000);
             } else {
-                clearInterval(countdownInt); 
-                document.body.className = 'red-active'; 
-                label.innerText = "STOPP";
-                if (isWild) label.classList.add('pulse'); 
-                
-                if (cfg.audioActive) {
-                    aSpace.pause(); aSpace.currentTime = 0;
-                    aGreen.pause(); aGreen.currentTime = 0; 
-                    
-                    aRed.currentTime = 0; 
-                    aRed.play().catch(()=>{});
-                }
-
-                clock = setTimeout(() => cycle('green'), dur * 1000);
+                executeRedPhase(dur);
             }
         }
 
         function finish() {
-            isLive = false; cancelAnimationFrame(animFrame); clearTimeout(clock); clearTimeout(mediaInt); clearInterval(countdownInt);
+            isLive = false; 
+            cancelAnimationFrame(animFrame); 
+            clearTimeout(clock); 
+            clearTimeout(mediaInt); 
+            clearInterval(countdownInt);
             
             if (cfg && cfg.audioActive) { 
                 aSpace.pause(); 
@@ -365,11 +422,84 @@
                 aRed.pause(); 
             }
             
-            document.body.className = ''; document.body.style.backgroundColor = "#38bdf8";
-            document.getElementById('status-label').innerText = "ZIEL";
+            document.querySelector('.btn-edge').style.display = 'none';
+            document.querySelector('.btn-skip').style.display = 'none';
+            document.querySelector('.bottom-bar').style.display = 'none';
             document.getElementById('reddit-image').style.display = 'none';
             document.getElementById('reddit-video').style.display = 'none';
             document.getElementById('reddit-video').pause();
+
+            document.body.className = ''; 
+            document.body.style.backgroundColor = "#000000"; 
+            
+            const label = document.getElementById('status-label');
+            label.innerText = ""; 
+            label.style.fontSize = "clamp(4rem, 18vw, 8rem)"; 
+            label.classList.remove('pulse');
+
+            let currentWinChance = 0.10 + (edgeCount * 0.05);
+            if (currentWinChance > 0.80) {
+                currentWinChance = 0.80;
+            }
+
+            setTimeout(() => {
+                let ticks = 0;
+                
+                // DAS EXTREME ROULETTE-TIMING (Der Cliffhanger)
+                const maxTicks = 30; // Zwei extra Ticks für die maximale Qual
+                let currentSpeed = 35; // Startet schnell
+                const slowdownFactor = 1.16; // Die aggressive Reibung. Führt zu massiven Pausen am Ende.
+                
+                const options = ["CUM", "AGAIN"];
+                const finalOutcome = Math.random() < currentWinChance ? "CUM" : "AGAIN"; 
+                
+                function spinWheel() {
+                    label.innerText = options[ticks % 2];
+                    label.style.color = ticks % 2 === 0 ? "var(--green)" : "var(--red)";
+                    
+                    ticks++;
+                    
+                    if (ticks < maxTicks) {
+                        currentSpeed *= slowdownFactor;
+                        setTimeout(spinWheel, currentSpeed);
+                    } else {
+                        // Der finale Moment
+                        label.innerText = finalOutcome;
+                        label.style.color = "var(--white)"; 
+                        
+                        if (finalOutcome === "CUM") {
+                            document.body.style.backgroundColor = "var(--green)";
+                            label.classList.add('pulse'); 
+                        } else {
+                            document.body.style.backgroundColor = "var(--red)"; 
+                            
+                            setTimeout(() => {
+                                label.style.fontSize = ""; 
+                                label.innerText = "";
+                                startSeamlessRestart();
+                            }, 5000); 
+                        }
+                    }
+                }
+                
+                spinWheel();
+                
+            }, 1500); 
+        }
+
+        function startSeamlessRestart() {
+            document.querySelector('.btn-edge').style.display = 'flex';
+            document.querySelector('.btn-skip').style.display = 'flex';
+            document.querySelector('.bottom-bar').style.display = 'block';
+            document.body.style.backgroundColor = ""; 
+            
+            startT = Date.now();
+            isLive = true;
+            document.getElementById('progress-bar').style.width = "0%";
+            
+            engine(); 
+            cycle('green'); 
+            rotateMedia();
         }
         
         window.onload = toggleWildUI;

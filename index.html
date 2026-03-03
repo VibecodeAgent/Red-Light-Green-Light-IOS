@@ -26,19 +26,23 @@
         
         #game-ui { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 10; box-sizing: border-box; }
         
-        /* FIX: Alle UI Buttons weiter nach links (0.8rem ist der perfekte Sicherheitsabstand) */
-        .btn-close { position: absolute; top: calc(env(safe-area-inset-top, 25px) + 15px); left: max(env(safe-area-inset-left, 0px), 0.8rem); background: rgba(0,0,0,0.4); border: none; color: white; width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(15px); }
-        .btn-edge { position: absolute; top: calc(50% - 2.2rem); left: max(env(safe-area-inset-left, 0px), 0.8rem); transform: translateY(-50%); background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: rgba(239, 68, 68, 0.6); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
-        .btn-edge:active { transform: translateY(-50%) scale(0.85); background: rgba(239, 68, 68, 0.4); color: #ffffff; border-color: rgba(239, 68, 68, 0.6); }
-        .btn-skip { position: absolute; top: calc(50% + 2.2rem); left: max(env(safe-area-inset-left, 0px), 0.8rem); transform: translateY(-50%); background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.4); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; }
-        .btn-skip:active { transform: translateY(-50%) scale(0.85); background: rgba(0, 0, 0, 0.4); color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.2); }
+        /* FIX: UI Buttons weiter nach links (8px) und transparenter */
+        .btn-close { position: absolute; top: calc(env(safe-area-inset-top, 25px) + 15px); left: max(env(safe-area-inset-left, 0px), 8px); background: rgba(0,0,0,0.15); border: none; color: rgba(255,255,255,0.7); width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(5px); transition: background-color 0.2s; }
+        .btn-close:active { background: rgba(0,0,0,0.4); color: #fff; }
+
+        .btn-edge { position: absolute; top: calc(50% - 2.2rem); left: max(env(safe-area-inset-left, 0px), 8px); transform: translateY(-50%); background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); color: rgba(239, 68, 68, 0.4); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(5px); transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+        .btn-edge:active { transform: translateY(-50%) scale(0.85); background: rgba(239, 68, 68, 0.3); color: #ffffff; border-color: rgba(239, 68, 68, 0.5); }
+
+        .btn-skip { position: absolute; top: calc(50% + 2.2rem); left: max(env(safe-area-inset-left, 0px), 8px); transform: translateY(-50%); background: rgba(0, 0, 0, 0.08); border: 1px solid rgba(255, 255, 255, 0.03); color: rgba(255, 255, 255, 0.3); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(5px); transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+        .btn-skip:active { transform: translateY(-50%) scale(0.85); background: rgba(0, 0, 0, 0.3); color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.1); }
 
         .media-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; background: transparent; }
         #reddit-image, #reddit-video { max-width: 100%; max-height: 100%; object-fit: contain; }
 
+        /* FIX: Countdown ist nun chirurgisch nah an der Notch verankert */
         .top-display { 
             position: absolute;
-            top: calc(env(safe-area-inset-top, 25px) + 15px);
+            top: env(safe-area-inset-top, 25px);
             left: 0;
             width: 100%;
             z-index: 50; 
@@ -58,7 +62,7 @@
             transition: font-size 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
         }
 
-        /* FIX: Neue, isolierte Klasse NUR für den Countdown (ca. 50% größer) */
+        /* Nur der grüne Countdown bekommt die vergrößerte Klasse (ca. 50% größer) */
         .status-text.countdown {
             font-size: clamp(4.5rem, 18vw, 8.25rem);
         }
@@ -192,7 +196,7 @@
             <video id="reddit-video" autoplay muted loop playsinline style="display:none;"></video>
         </div>
         
-        <div class="top-display"><h1 id="status-label" class="status-text"></h1></div>
+        <div class="top-display"><h1 id="status-label" class="status-text adaptive"></h1></div>
         
         <div class="bottom-bar"><div class="progress-container"><div id="phase-marker"></div><div id="progress-bar"></div></div></div>
     </div>
@@ -403,7 +407,6 @@
             document.body.className = 'red-active'; 
             const label = document.getElementById('status-label');
             
-            /* FIX: Isolation des Countdowns wird hier wieder aufgehoben */
             label.classList.remove('countdown');
 
             if (isForcedEdge) {
@@ -454,7 +457,6 @@
                 label.classList.remove('pulse'); 
                 label.classList.remove('adaptive'); 
                 
-                /* FIX: Nur der grüne Countdown bekommt die vergrößerte Klasse */
                 label.classList.add('countdown');
 
                 if (cfg.audioActive) {
@@ -498,7 +500,6 @@
             const label = document.getElementById('status-label');
             label.innerHTML = ""; 
             
-            /* FIX: Aufräumen der CSS-Klassen für ein sauberes Ende */
             label.classList.remove('pulse', 'countdown');
 
             let currentWinChance = 0.20 + (edgeCount * 0.05);
@@ -575,7 +576,7 @@
             document.body.style.backgroundColor = ""; 
             
             const label = document.getElementById('status-label');
-            label.classList.remove('adaptive', 'countdown'); /* UPDATE */
+            label.classList.remove('adaptive', 'countdown'); 
             label.style.fontSize = "";
             label.style.letterSpacing = "";
             label.style.opacity = "";

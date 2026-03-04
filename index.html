@@ -35,15 +35,17 @@
         .btn-skip { position: absolute; top: calc(50% + 2.2rem); left: max(env(safe-area-inset-left, 0px), 8px); transform: translateY(-50%); background: rgba(0, 0, 0, 0.08); border: 1px solid rgba(255, 255, 255, 0.03); color: rgba(255, 255, 255, 0.3); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(5px); transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
         .btn-skip:active { transform: translateY(-50%) scale(0.85); background: rgba(0, 0, 0, 0.3); color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.1); }
 
-        .media-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; background: transparent; }
+        .media-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; background: transparent; overflow: hidden; }
         
-        /* FIX: Gigantische Medienkarte mit hauchdünnem Farbrahmen */
+        /* Die absolute Vollbild Lösung mit 2 Prozent Überhang für makellose Ränder */
         #reddit-image, #reddit-video { 
-            max-width: 96vw; 
-            max-height: 86dvh; 
-            object-fit: contain; 
-            border-radius: 16px; 
-            box-shadow: 0 15px 50px rgba(0,0,0,0.8); 
+            width: 100vw; 
+            height: 100dvh; 
+            object-fit: cover; 
+            object-position: center;
+            transform: scale(1.02); 
+            border: none;
+            outline: none;
         }
         
         .top-display { position: absolute; top: env(safe-area-inset-top, 25px); left: 0; width: 100%; z-index: 50; text-align: center; text-shadow: 0 4px 20px rgba(0,0,0,0.9); pointer-events: none; }
@@ -140,7 +142,7 @@
             </div>
             
             <div class="input-group full-width">
-                <label>Dynamic Tension (KI-Erregungssteuerung)</label>
+                <label>Dynamic Tension (KI Erregungssteuerung)</label>
                 <div class="checkbox-group" style="padding: 0.8rem;">
                     <label class="checkbox-item"><input type="checkbox" id="f-tension-mode" checked> Aktiviert</label>
                 </div>
@@ -196,7 +198,7 @@
                 if (isLive && currentTension > 0) {
                     currentTension = Math.max(0, currentTension - 1);
                 }
-            }, 5000); // -1 Punkt alle 5 Sekunden (-12 pro Minute)
+            }, 5000); 
         }
 
         function getHDUrl(post) {
@@ -422,15 +424,15 @@
                     
                     if (currentTension <= 20) { 
                         if (type === 'green') {
-                            dur = cfg.gMin + (1 - Math.pow(r, 1.8)) * (cfg.gMax - cfg.gMin);
+                            dur = cfg.gMin + (1 - Math.pow(r, 3.0)) * (cfg.gMax - cfg.gMin);
                         } else {
-                            dur = cfg.rMin + Math.pow(r, 1.8) * (cfg.rMax - cfg.rMin);
+                            dur = cfg.rMin + Math.pow(r, 3.0) * (cfg.rMax - cfg.rMin);
                         }
                     } else if (currentTension >= 81) { 
                         if (type === 'green') {
-                            dur = cfg.gMin + Math.pow(r, 1.8) * (cfg.gMax - cfg.gMin);
+                            dur = cfg.gMin + Math.pow(r, 3.0) * (cfg.gMax - cfg.gMin);
                         } else {
-                            dur = cfg.rMin + (1 - Math.pow(r, 1.8)) * (cfg.rMax - cfg.rMin);
+                            dur = cfg.rMin + (1 - Math.pow(r, 3.0)) * (cfg.rMax - cfg.rMin);
                         }
                     } else { 
                         if (type === 'green') {

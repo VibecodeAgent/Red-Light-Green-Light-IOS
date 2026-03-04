@@ -7,7 +7,7 @@
     <style>
         :root { --bg: #0b0f19; --card: #161e2d; --accent: #38bdf8; --green: #10b981; --red: #ef4444; --white: #f8fafc; --input-bg: rgba(11, 15, 25, 0.9); }
         
-        html, body { margin: 0; padding: 0; width: 100vw; height: 100dvh; font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--white); display: flex; justify-content: center; align-items: center; transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; -webkit-tap-highlight-color: transparent; }
+        html, body { margin: 0; padding: 0; width: 100vw; height: 100dvh; font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg); color: var(--white); display: flex; justify-content: center; align-items: center; transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; -webkit-tap-highlight-color: transparent; }
         
         .setup-container { padding: 2.5rem; border-radius: 2.5rem; width: 95%; max-width: 550px; background: var(--card); box-shadow: 0 30px 60px rgba(0,0,0,0.9); z-index: 100; text-align: center; max-height: 92dvh; overflow-y: auto; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); scrollbar-width: none; box-sizing: border-box; }
         .setup-container::-webkit-scrollbar { display: none; }
@@ -37,7 +37,6 @@
 
         .media-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; background: transparent; overflow: hidden; }
         
-        /* Die absolute Vollbild Lösung mit 2 Prozent Überhang für makellose Ränder */
         #reddit-image, #reddit-video { 
             width: 100vw; 
             height: 100dvh; 
@@ -82,14 +81,14 @@
     <div class="setup-container" id="setup-ui">
         <h2>Einstellungen</h2>
         
-        <div class="section-title">Inhalte & Filter</div>
+        <div class="section-title">Inhalte Filter</div>
         <div class="settings-grid">
             <div class="input-group full-width">
-                <label>Quellen (Subreddits, u/User)</label>
-                <input type="text" id="t-sources" value="" placeholder="z.B. memes, pics, u/Name">
+                <label>Quellen</label>
+                <input type="text" id="t-sources" value="" placeholder="z.B. memes, pics">
             </div>
             <div class="input-group full-width">
-                <label>Medientypen (HD)</label>
+                <label>Medientypen</label>
                 <div class="checkbox-group">
                     <label class="checkbox-item"><input type="checkbox" id="f-img" checked> Bilder</label>
                     <label class="checkbox-item"><input type="checkbox" id="f-vid" checked> Videos</label>
@@ -99,14 +98,14 @@
             <div class="input-group">
                 <label>Sortierung</label>
                 <select id="t-sort">
-                    <option value="random">Zufall (Fair Mix)</option>
+                    <option value="random">Zufall</option>
                     <option value="hot">Beliebt</option>
                     <option value="new">Neu</option>
-                    <option value="top">Top (All Time)</option>
+                    <option value="top">Top</option>
                 </select>
             </div>
             <div class="input-group">
-                <label>Wechsel (s)</label>
+                <label>Wechsel</label>
                 <input type="number" id="t-img-dur" value="20" min="1">
             </div>
         </div>
@@ -114,35 +113,35 @@
         <div class="section-title">Spielregeln</div>
         <div class="settings-grid">
             <div class="input-group full-width">
-                <label>Gesamtzeit (Minuten)</label>
+                <label>Gesamtzeit</label>
                 <input type="number" id="t-total-min" value="15" step="0.5" min="0.1">
             </div>
             
             <div class="input-group full-width">
-                <label>Audio & Soundeffekte</label>
+                <label>Audio Soundeffekte</label>
                 <div class="checkbox-group" style="padding: 0.8rem;">
                     <label class="checkbox-item"><input type="checkbox" id="f-audio" checked> Sounds aktivieren</label>
                 </div>
             </div>
 
-            <div class="input-group"><label>Grün Min (s)</label><input type="number" id="t-gmin" value="4"></div>
-            <div class="input-group"><label>Grün Max (s)</label><input type="number" id="t-gmax" value="12"></div>
-            <div class="input-group"><label>Rot Min (s)</label><input type="number" id="t-rmin" value="4"></div>
-            <div class="input-group"><label>Rot Max (s)</label><input type="number" id="t-rmax" value="15"></div>
+            <div class="input-group"><label>Grün Min</label><input type="number" id="t-gmin" value="4"></div>
+            <div class="input-group"><label>Grün Max</label><input type="number" id="t-gmax" value="12"></div>
+            <div class="input-group"><label>Rot Min</label><input type="number" id="t-rmin" value="4"></div>
+            <div class="input-group"><label>Rot Max</label><input type="number" id="t-rmax" value="15"></div>
             
             <div class="input-group full-width">
-                <label>Lange Pause (10% Chance)</label>
+                <label>Lange Pause</label>
                 <div class="checkbox-group" style="padding: 0.8rem;">
                     <label class="checkbox-item"><input type="checkbox" id="f-long-break" checked> Aktiviert</label>
                 </div>
             </div>
             <div class="input-group full-width">
-                <label>Pausen-Dauer (s)</label>
+                <label>Pausen Dauer</label>
                 <input type="number" id="t-long-break-dur" value="20" min="5">
             </div>
             
             <div class="input-group full-width">
-                <label>Dynamic Tension (KI Erregungssteuerung)</label>
+                <label>Erregungssteuerung</label>
                 <div class="checkbox-group" style="padding: 0.8rem;">
                     <label class="checkbox-item"><input type="checkbox" id="f-tension-mode" checked> Aktiviert</label>
                 </div>
@@ -157,11 +156,11 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
         
-        <button class="btn-edge" onclick="triggerEdge(event)" aria-label="Notbremse / Edge">
+        <button class="btn-edge" onclick="triggerEdge(event)" aria-label="Notbremse">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         </button>
 
-        <button class="btn-skip" onclick="skipMedia(event)" aria-label="Nächstes Medium">
+        <button class="btn-skip" onclick="skipMedia(event)" aria-label="Naechstes Medium">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </button>
 
@@ -211,7 +210,7 @@
         async function fetchRedditData(url) {
             try { const r = await fetch(url); if (r.ok) return await r.json(); } catch (e) {}
             try { const pr = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`); const res = await pr.json(); if (res.contents) return JSON.parse(res.contents); } catch (e) {}
-            try { const pr2 = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`); if (pr2.ok) return await pr2.json(); } catch (e) { console.error("Alle Versuche gescheitert", e); }
+            try { const pr2 = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`); if (pr2.ok) return await pr2.json(); } catch (e) { console.error("Fehler beim Laden", e); }
             return null;
         }
 
@@ -252,6 +251,28 @@
                 [unique[i], unique[j]] = [unique[j], unique[i]];
             }
             redditPosts = unique;
+        }
+
+        function preloadNextMedia() {
+            if (redditPosts.length === 0) return;
+            const nextPost = redditPosts[postIndex];
+            let url = "";
+
+            if (nextPost.is_video && nextPost.media?.reddit_video) {
+                url = nextPost.media.reddit_video.fallback_url;
+                const v = document.createElement('video');
+                v.preload = "auto";
+                v.src = url;
+            } else if (nextPost.preview?.reddit_video_preview) {
+                url = nextPost.preview.reddit_video_preview.fallback_url;
+                const v = document.createElement('video');
+                v.preload = "auto";
+                v.src = url;
+            } else {
+                url = getHDUrl(nextPost);
+                const img = new Image();
+                img.src = url;
+            }
         }
 
         function skipMedia(event) {
@@ -305,6 +326,7 @@
             
             if (!isPostGame) {
                 mediaInt = setTimeout(rotateMedia, cfg.imgDur * 1000);
+                preloadNextMedia();
             }
         }
 
@@ -324,12 +346,12 @@
 
             const btn = document.querySelector('.start-btn'); 
             const originalText = btn.innerText;
-            btn.innerText = "LADE HD-STREAMS..."; btn.disabled = true;
+            btn.innerText = "LADE STREAMS..."; btn.disabled = true;
             
             await fetchSources();
             
             if(redditPosts.length === 0) { 
-                alert("Keine Medien gefunden!"); 
+                alert("Keine Medien gefunden"); 
                 btn.innerText = originalText; btn.disabled = false; return; 
             }
             
@@ -392,7 +414,7 @@
             label.classList.remove('countdown');
 
             if (isForcedEdge) {
-                label.innerHTML = "DON'T YOU <br> DARE CUM"; 
+                label.innerHTML = "DONT YOU <br> DARE CUM"; 
                 label.classList.add('adaptive'); 
             } else {
                 label.innerHTML = "HANDS<br>OFF";
@@ -424,9 +446,9 @@
                     
                     if (currentTension <= 20) { 
                         if (type === 'green') {
-                            dur = cfg.gMin + (1 - Math.pow(r, 3.0)) * (cfg.gMax - cfg.gMin);
+                            dur = cfg.gMin + (1 - Math.pow(r, 5.0)) * (cfg.gMax - cfg.gMin);
                         } else {
-                            dur = cfg.rMin + Math.pow(r, 3.0) * (cfg.rMax - cfg.rMin);
+                            dur = cfg.rMin + Math.pow(r, 5.0) * (cfg.rMax - cfg.rMin);
                         }
                     } else if (currentTension >= 81) { 
                         if (type === 'green') {

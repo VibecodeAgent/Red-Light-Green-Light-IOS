@@ -45,6 +45,7 @@
             transform: scale(1.02); 
             border: none;
             outline: none;
+            background: transparent;
         }
         
         .top-display { position: absolute; top: env(safe-area-inset-top, 25px); left: 0; width: 100%; z-index: 50; text-align: center; text-shadow: 0 4px 20px rgba(0,0,0,0.9); pointer-events: none; }
@@ -307,19 +308,42 @@
             const vid = document.getElementById('reddit-video');
             const post = redditPosts[postIndex];
             
-            img.style.display = 'none'; vid.style.display = 'none'; vid.pause();
+            img.style.display = 'none'; 
+            vid.style.display = 'none'; 
+            vid.pause();
             
-            img.onerror = () => { 
+            img.onload = null;
+            img.onerror = null;
+            vid.onloadeddata = null;
+            vid.onerror = null;
+
+            const handleError = () => { 
                 postIndex = (postIndex + 1) % redditPosts.length; 
                 mediaInt = setTimeout(rotateMedia, 500); 
             };
 
+            img.onerror = handleError;
+            vid.onerror = handleError;
+
             if (post.is_video && post.media?.reddit_video) {
-                vid.src = post.media.reddit_video.fallback_url; vid.style.display = 'block'; vid.play().catch(()=>{});
+                vid.onloadeddata = () => {
+                    vid.style.display = 'block';
+                    vid.play().catch(()=>{});
+                };
+                vid.src = post.media.reddit_video.fallback_url;
+                vid.load();
             } else if (post.preview?.reddit_video_preview) {
-                vid.src = post.preview.reddit_video_preview.fallback_url; vid.style.display = 'block'; vid.play().catch(()=>{});
+                vid.onloadeddata = () => {
+                    vid.style.display = 'block';
+                    vid.play().catch(()=>{});
+                };
+                vid.src = post.preview.reddit_video_preview.fallback_url;
+                vid.load();
             } else { 
-                img.src = getHDUrl(post); img.style.display = 'block'; 
+                img.onload = () => {
+                    img.style.display = 'block';
+                };
+                img.src = getHDUrl(post);
             }
             
             postIndex = (postIndex + 1) % redditPosts.length;
@@ -446,9 +470,10 @@
                     
                     if (currentTension <= 20) { 
                         if (type === 'green') {
-                            dur = cfg.gMin + (1 - Math.pow(r, 5.0)) * (cfg.gMax - cfg.gMin);
+                            // Brutale Mathematik fuer Phase 1
+                            dur = cfg.gMin + (1 - Math.pow(r, 7.0)) * (cfg.gMax - cfg.gMin);
                         } else {
-                            dur = cfg.rMin + Math.pow(r, 5.0) * (cfg.rMax - cfg.rMin);
+                            dur = cfg.rMin + Math.pow(r, 7.0) * (cfg.rMax - cfg.rMin);
                         }
                     } else if (currentTension >= 81) { 
                         if (type === 'green') {

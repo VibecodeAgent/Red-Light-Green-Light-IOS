@@ -51,6 +51,7 @@
             position: absolute;
             top: 0; left: 0;
             display: none;
+            transform: scale(1.01);
         }
         
         .top-display { position: absolute; top: env(safe-area-inset-top, 25px); left: 0; width: 100%; z-index: 50; text-align: center; text-shadow: 0 4px 20px rgba(0,0,0,0.9); pointer-events: none; }
@@ -104,8 +105,8 @@
             <div class="input-group">
                 <label>Sortierung</label>
                 <select id="t-sort">
+                    <option value="hot" selected>Beliebt</option>
                     <option value="random">Zufall</option>
-                    <option value="hot">Beliebt</option>
                     <option value="new">Neu</option>
                     <option value="top">Top</option>
                 </select>
@@ -126,7 +127,7 @@
             <div class="input-group full-width">
                 <label>Audio Soundeffekte</label>
                 <div class="checkbox-group" style="padding: 0.8rem;">
-                    <label class="checkbox-item"><input type="checkbox" id="f-audio" checked> Sounds aktivieren</label>
+                    <label class="checkbox-item"><input type="checkbox" id="f-audio"> Sounds aktivieren</label>
                 </div>
             </div>
 
@@ -244,12 +245,14 @@
             const fImg = document.getElementById('f-img').checked;
             const fVid = document.getElementById('f-vid').checked;
             const fGif = document.getElementById('f-gif').checked;
+            
             const fetchSort = sort === 'random' ? 'hot' : sort;
+            const timeParam = sort === 'top' ? '&t=all' : '';
             
             const buckets = await Promise.all(sourceList.map(async (source) => {
                 let url = source.toLowerCase().startsWith('u/') 
-                    ? `https://www.reddit.com/user/${source.substring(2)}/submitted.json?sort=${fetchSort}&limit=50`
-                    : `https://www.reddit.com/r/${source}/${fetchSort}.json?limit=50`;
+                    ? `https://www.reddit.com/user/${source.substring(2)}/submitted.json?sort=${fetchSort}&limit=50${timeParam}`
+                    : `https://www.reddit.com/r/${source}/${fetchSort}.json?limit=50${timeParam}`;
                 try { 
                     const data = await fetchRedditData(url);
                     if (!data || !data.data || !data.data.children) return [];

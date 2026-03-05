@@ -37,7 +37,12 @@
 
         .media-background { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; z-index: 1; background: transparent; overflow: hidden; }
         
-        #reddit-image, #reddit-video { 
+        /* Das smarte Lade-Rad */
+        .spinner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 45px; height: 45px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; z-index: 2; display: none; }
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* Opacity Trick: Safari laedt transparent weiter, ignoriert aber display:none */
+        .media-layer { 
             width: 100%; 
             height: 100%; 
             object-fit: contain; 
@@ -45,7 +50,12 @@
             border: none;
             outline: none;
             background: transparent;
+            position: absolute;
+            top: 0; left: 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
+        .media-active { opacity: 1; }
         
         .top-display { position: absolute; top: env(safe-area-inset-top, 25px); left: 0; width: 100%; z-index: 50; text-align: center; text-shadow: 0 4px 20px rgba(0,0,0,0.9); pointer-events: none; }
         
@@ -165,8 +175,9 @@
         </button>
 
         <div class="media-background">
-            <img id="reddit-image" src="" alt="" style="display:none;">
-            <video id="reddit-video" autoplay muted loop playsinline style="display:none;"></video>
+            <div id="loading-spinner" class="spinner"></div>
+            <img id="reddit-image" class="media-layer" src="" alt="">
+            <video id="reddit-video" class="media-layer" autoplay muted loop playsinline></video>
         </div>
         
         <div class="top-display"><h1 id="status-label" class="status-text"></h1></div>
@@ -253,28 +264,6 @@
             redditPosts = unique;
         }
 
-        function preloadNextMedia() {
-            if (redditPosts.length === 0) return;
-            const nextPost = redditPosts[postIndex];
-            let url = "";
-
-            if (nextPost.is_video && nextPost.media?.reddit_video) {
-                url = nextPost.media.reddit_video.fallback_url;
-                const v = document.createElement('video');
-                v.preload = "auto";
-                v.src = url;
-            } else if (nextPost.preview?.reddit_video_preview) {
-                url = nextPost.preview.reddit_video_preview.fallback_url;
-                const v = document.createElement('video');
-                v.preload = "auto";
-                v.src = url;
-            } else {
-                url = getHDUrl(nextPost);
-                const img = new Image();
-                img.src = url;
-            }
-        }
-
         function skipMedia(event) {
             if (event) event.stopPropagation(); 
             if ((!isLive && !isPostGame) || redditPosts.length === 0) return;
@@ -305,47 +294,55 @@
             
             const img = document.getElementById('reddit-image');
             const vid = document.getElementById('reddit-video');
+            const spinner = document.getElementById('loading-spinner');
             const post = redditPosts[postIndex];
             
-            img.style.display = 'none'; 
-            vid.style.display = 'none'; 
+            // Sauberer RAM-Reset und Fade-Out
+            img.classList.remove('media-active');
+            vid.classList.remove('media-active');
             vid.pause();
             
-            const handleError = () => { 
-                postIndex = (postIndex + 1) % redditPosts.length; 
-                mediaInt = setTimeout(rotateMedia, 500); 
-            };
+            setTimeout(() => {
+                vid.removeAttribute('src');
+                img.removeAttribute('src');
+                spinner.style.display = 'block'; // Spinner an
+                
+                const handleReady = (el) => {
+                    spinner.style.display = 'none';
+                    el.classList.add('media-active');
+                };
 
-            img.onerror = handleError;
-            vid.onerror = handleError;
+                const handleError = () => { 
+                    setTimeout(() => {
+                        postIndex = (postIndex + 1) % redditPosts.length; 
+                        rotateMedia();
+                    }, 500); // Kurz warten bei Fehler, um API-Spam zu verhindern
+                };
 
-            if (post.is_video && post.media?.reddit_video) {
-                vid.src = post.media.reddit_video.fallback_url;
-                vid.style.display = 'block';
-                vid.load();
-                let playPromise = vid.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(() => {});
+                img.onload = () => handleReady(img);
+                img.onerror = handleError;
+                vid.onloadeddata = () => {
+                    handleReady(vid);
+                    vid.play().catch(()=>{});
+                };
+                vid.onerror = handleError;
+
+                if (post.is_video && post.media?.reddit_video) {
+                    vid.src = post.media.reddit_video.fallback_url;
+                    vid.load();
+                } else if (post.preview?.reddit_video_preview) {
+                    vid.src = post.preview.reddit_video_preview.fallback_url;
+                    vid.load();
+                } else { 
+                    img.src = getHDUrl(post); 
                 }
-            } else if (post.preview?.reddit_video_preview) {
-                vid.src = post.preview.reddit_video_preview.fallback_url;
-                vid.style.display = 'block';
-                vid.load();
-                let playPromise = vid.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(() => {});
+                
+                postIndex = (postIndex + 1) % redditPosts.length;
+                
+                if (!isPostGame) {
+                    mediaInt = setTimeout(rotateMedia, cfg.imgDur * 1000);
                 }
-            } else { 
-                img.src = getHDUrl(post); 
-                img.style.display = 'block'; 
-            }
-            
-            postIndex = (postIndex + 1) % redditPosts.length;
-            
-            if (!isPostGame) {
-                mediaInt = setTimeout(rotateMedia, cfg.imgDur * 1000);
-                preloadNextMedia();
-            }
+            }, 300); // Warte, bis Fade-Out (Opacity 0) fertig ist
         }
 
         async function bootGame() {
@@ -535,6 +532,7 @@
             document.getElementById('reddit-image').style.display = 'none';
             document.getElementById('reddit-video').style.display = 'none';
             document.getElementById('reddit-video').pause();
+            document.getElementById('loading-spinner').style.display = 'none';
 
             document.body.className = ''; 
             document.body.style.backgroundColor = "#000000"; 
@@ -543,7 +541,7 @@
             label.innerHTML = ""; 
             label.classList.remove('pulse', 'countdown');
 
-            // Magische Schwelle: Basis 10 Prozent plus 6 Prozent pro Edge
+            // 10% Basis + 6% pro Edge Klick. Bei 7 Klicks = 52%. Max 85%
             let currentWinChance = 0.10 + (edgeCount * 0.06);
             if (currentWinChance > 0.85) {
                 currentWinChance = 0.85;

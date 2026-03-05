@@ -171,13 +171,17 @@
         </button>
 
         <div class="media-background">
-            <div id="buffer-1" class="media-buffer active">
+            <div id="buffer-1" class="media-buffer">
                 <img id="img-1" class="media-layer" src="" alt="">
                 <video id="vid-1" class="media-layer" autoplay muted loop playsinline></video>
             </div>
             <div id="buffer-2" class="media-buffer">
                 <img id="img-2" class="media-layer" src="" alt="">
                 <video id="vid-2" class="media-layer" autoplay muted loop playsinline></video>
+            </div>
+            <div id="buffer-3" class="media-buffer">
+                <img id="img-3" class="media-layer" src="" alt="">
+                <video id="vid-3" class="media-layer" autoplay muted loop playsinline></video>
             </div>
         </div>
         
@@ -188,7 +192,7 @@
 
     <script>
         let cfg = {}; let isLive = false; let startT; let clock; let countdownInt; let mediaInt; let animFrame;
-        let redditPosts = []; let postIndex = 0;
+        let redditPosts = []; 
         
         let edgeCount = 0; 
         let isPostGame = false; 
@@ -196,8 +200,12 @@
         let currentTension = 0; 
         let tensionDecayTimer;
 
-        let activeBuf = 1;
-        let loadTicket = 0;
+        let currentIndex = 0;
+        let bufferState = [
+            { id: 1, reqIdx: -1, isReady: false },
+            { id: 2, reqIdx: -1, isReady: false },
+            { id: 3, reqIdx: -1, isReady: false }
+        ];
 
         const aGreen = document.getElementById('sfx-green');
         const aRed = document.getElementById('sfx-red');
@@ -272,7 +280,8 @@
             if (event) event.stopPropagation(); 
             if ((!isLive && !isPostGame) || redditPosts.length === 0) return;
             clearTimeout(mediaInt);
-            rotateMedia();
+            currentIndex++;
+            manageBuffers();
         }
 
         function triggerEdge(event) {
@@ -291,92 +300,110 @@
             executeRedPhase(cfg.longBreakDur, true);
         }
 
-        function rotateMedia() {
-            if ((!isLive && !isPostGame) || redditPosts.length === 0) return;
-            clearTimeout(mediaInt); 
-            
-            loadTicket++;
-            const myTicket = loadTicket;
-            
-            const nextBuf = activeBuf === 1 ? 2 : 1;
-            const containerNext = document.getElementById('buffer-' + nextBuf);
-            const imgNext = document.getElementById('img-' + nextBuf);
-            const vidNext = document.getElementById('vid-' + nextBuf);
+        function loadPostIntoBuffer(idx) {
+            if (redditPosts.length === 0) return;
+            let safeIdx = idx % redditPosts.length;
+            let bId = (idx % 3) + 1;
+            let state = bufferState[bId - 1];
 
-            const containerActive = document.getElementById('buffer-' + activeBuf);
-            const vidActive = document.getElementById('vid-' + activeBuf);
-            const imgActive = document.getElementById('img-' + activeBuf);
+            if (state.reqIdx === idx) return;
 
-            const post = redditPosts[postIndex];
-            
-            imgNext.style.display = 'none';
-            vidNext.style.display = 'none';
-            vidNext.pause();
-            
-            imgNext.onload = null;
-            imgNext.onerror = null;
-            vidNext.onloadeddata = null;
-            vidNext.onerror = null;
+            state.reqIdx = idx;
+            state.isReady = false;
+
+            const img = document.getElementById('img-' + bId);
+            const vid = document.getElementById('vid-' + bId);
+            const post = redditPosts[safeIdx];
+
+            img.style.display = 'none';
+            vid.style.display = 'none';
+            vid.pause();
+            vid.removeAttribute('src');
+            img.removeAttribute('src');
+            vid.load();
 
             const handleReady = () => {
-                if (myTicket !== loadTicket) return;
+                if (state.reqIdx === idx) {
+                    state.isReady = true;
+                    checkDisplay();
+                }
+            };
 
-                containerActive.classList.remove('active');
-                containerNext.classList.add('active');
+            const handleErr = () => {
+                if (state.reqIdx === idx) {
+                    state.isReady = true; 
+                    if (currentIndex === idx) {
+                        currentIndex++;
+                        manageBuffers();
+                    }
+                }
+            };
 
-                if (vidNext.style.display === 'block') {
-                    let playPromise = vidNext.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(()=>{});
+            img.onload = handleReady;
+            img.onerror = handleErr;
+            vid.onloadeddata = handleReady;
+            vid.onerror = handleErr;
+
+            if (post.is_video && post.media?.reddit_video) {
+                vid.src = post.media.reddit_video.fallback_url;
+                vid.style.display = 'block';
+                vid.load();
+            } else if (post.preview?.reddit_video_preview) {
+                vid.src = post.preview.reddit_video_preview.fallback_url;
+                vid.style.display = 'block';
+                vid.load();
+            } else {
+                img.src = getHDUrl(post);
+                img.style.display = 'block';
+            }
+        }
+
+        function checkDisplay() {
+            if (redditPosts.length === 0) return;
+            let bId = (currentIndex % 3) + 1;
+            let state = bufferState[bId - 1];
+
+            if (state.isReady && state.reqIdx === currentIndex) {
+                document.querySelectorAll('.media-buffer').forEach(b => b.classList.remove('active'));
+                document.getElementById('buffer-' + bId).classList.add('active');
+
+                let vid = document.getElementById('vid-' + bId);
+                if (vid.style.display === 'block') {
+                    let p = vid.play();
+                    if(p !== undefined) p.catch(()=>{});
+                }
+
+                for (let i = 1; i <= 3; i++) {
+                    if (i !== bId) {
+                        let otherVid = document.getElementById('vid-' + i);
+                        otherVid.pause();
                     }
                 }
 
-                setTimeout(() => {
-                    vidActive.pause();
-                    vidActive.removeAttribute('src');
-                    vidActive.load(); 
-                    imgActive.removeAttribute('src');
-                }, 500);
-
-                activeBuf = nextBuf;
-                postIndex = (postIndex + 1) % redditPosts.length;
-                
+                clearTimeout(mediaInt);
                 if (!isPostGame) {
-                    mediaInt = setTimeout(rotateMedia, cfg.imgDur * 1000);
+                    mediaInt = setTimeout(() => {
+                        currentIndex++;
+                        manageBuffers();
+                    }, cfg.imgDur * 1000);
                 }
-            };
-
-            const handleError = () => { 
-                if (myTicket !== loadTicket) return;
-                postIndex = (postIndex + 1) % redditPosts.length; 
-                rotateMedia(); 
-            };
-
-            imgNext.onerror = handleError;
-            vidNext.onerror = handleError;
-
-            if (post.is_video && post.media?.reddit_video) {
-                vidNext.onloadeddata = handleReady;
-                vidNext.src = post.media.reddit_video.fallback_url;
-                vidNext.style.display = 'block';
-                vidNext.load();
-            } else if (post.preview?.reddit_video_preview) {
-                vidNext.onloadeddata = handleReady;
-                vidNext.src = post.preview.reddit_video_preview.fallback_url;
-                vidNext.style.display = 'block';
-                vidNext.load();
-            } else { 
-                imgNext.onload = handleReady;
-                imgNext.src = getHDUrl(post);
-                imgNext.style.display = 'block';
             }
+        }
+
+        function manageBuffers() {
+            if (redditPosts.length === 0) return;
+            loadPostIntoBuffer(currentIndex);
+            loadPostIntoBuffer(currentIndex + 1);
+            loadPostIntoBuffer(currentIndex + 2);
+            checkDisplay();
         }
 
         async function bootGame() {
             edgeCount = 0;
             isPostGame = false;
             currentTension = 0; 
-            activeBuf = 1;
+            currentIndex = 0;
+            bufferState.forEach(b => { b.reqIdx = -1; b.isReady = false; });
 
             const audioWantsActive = document.getElementById('f-audio').checked;
             if (audioWantsActive) {
@@ -416,7 +443,9 @@
             
             isLive = true; startT = Date.now();
             startTensionDecay();
-            engine(); cycle('green'); rotateMedia();
+            engine(); 
+            cycle('green'); 
+            manageBuffers();
         }
 
         function engine() {
@@ -558,10 +587,10 @@
             document.querySelector('.btn-skip').style.display = 'none';
             document.querySelector('.bottom-bar').style.display = 'none';
             
-            document.getElementById('buffer-1').style.display = 'none';
-            document.getElementById('buffer-2').style.display = 'none';
-            document.getElementById('vid-1').pause();
-            document.getElementById('vid-2').pause();
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('buffer-' + i).classList.remove('active');
+                document.getElementById('vid-' + i).pause();
+            }
 
             document.body.className = ''; 
             document.body.style.backgroundColor = "#000000"; 
@@ -618,10 +647,7 @@
                             label.innerHTML = finalOutcome.replace(/<br>/g, ' '); 
 
                             document.querySelector('.btn-skip').style.display = 'flex';
-                            
-                            document.getElementById('buffer-1').style.display = 'block';
-                            document.getElementById('buffer-2').style.display = 'block';
-                            rotateMedia();
+                            checkDisplay();
 
                         } else {
                             document.body.style.backgroundColor = "var(--red)"; 
@@ -660,13 +686,12 @@
             isLive = true;
             document.getElementById('progress-bar').style.width = "0%";
             
-            document.getElementById('buffer-1').style.display = 'block';
-            document.getElementById('buffer-2').style.display = 'block';
-            
             startTensionDecay();
             engine(); 
             cycle('green'); 
-            rotateMedia();
+            
+            currentIndex++;
+            manageBuffers();
         }
     </script>
 </body>

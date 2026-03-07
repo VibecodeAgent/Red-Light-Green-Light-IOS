@@ -22,7 +22,7 @@
         .checkbox-group { display: flex; flex-wrap: wrap; justify-content: space-around; background: var(--input-bg); padding: 0.9rem; border-radius: 1rem; border: 2px solid #334155; gap: 10px; }
         .checkbox-item { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
         .checkbox-item input { width: 1.2rem; height: 1.2rem; cursor: pointer; appearance: checkbox; -webkit-appearance: checkbox; }
-        .start-btn { width: 100%; background: var(--accent); color: var(--bg); border: none; padding: 1.4rem; border-radius: 1.5rem; font-weight: 900; font-size: 1.3rem; cursor: margin-top: 2rem; transition: all 0.3s; text-transform: uppercase; }
+        .start-btn { width: 100%; background: var(--accent); color: var(--bg); border: none; padding: 1.4rem; border-radius: 1.5rem; font-weight: 900; font-size: 1.3rem; cursor: pointer; margin-top: 2rem; transition: all 0.3s; text-transform: uppercase; }
         
         #game-ui { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 10; box-sizing: border-box; }
         
@@ -69,9 +69,11 @@
         .status-text.countdown { font-size: clamp(4.5rem, 18vw, 8.25rem); }
         .status-text.adaptive { font-size: clamp(2.5rem, 9vw, 4rem); letter-spacing: -1px; line-height: 1.1; }
 
-        .bottom-bar { position: absolute; bottom: calc(env(safe-area-inset-bottom, 15px) + 20px); left: 50%; transform: translateX(-50%); width: 90%; max-width: 650px; z-index: 50; }
-        .progress-container { width: 100%; height: 12px; background: rgba(255,255,255,0.3); border-radius: 20px; position: relative; overflow: visible; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .bottom-bar { position: absolute; bottom: calc(env(safe-area-inset-bottom, 15px) + 20px); left: 50%; transform: translateX(-50%); width: 90%; max-width: 650px; z-index: 50; display: flex; flex-direction: column; align-items: center; }
+        .progress-container { width: 100%; height: 12px; background: rgba(255,255,255,0.3); border-radius: 20px; position: relative; overflow: visible; box-shadow: 0 2px 10px rgba(0,0,0,0.3); margin-bottom: 8px; }
         #progress-bar { width: 0%; height: 100%; background: var(--white); border-radius: 20px; transition: width 0.1s linear; }
+        
+        .edge-counter-text { font-size: 0.55rem; font-weight: 300; color: rgba(255,255,255,0.4); letter-spacing: 2px; text-transform: uppercase; margin: 0; line-height: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         
         body.green-active { background-color: var(--green); }
         body.red-active { background-color: var(--red); }
@@ -188,7 +190,10 @@
         
         <div class="top-display"><h1 id="status-label" class="status-text"></h1></div>
         
-        <div class="bottom-bar"><div class="progress-container"><div id="progress-bar"></div></div></div>
+        <div class="bottom-bar">
+            <div class="progress-container"><div id="progress-bar"></div></div>
+            <div id="edge-display" class="edge-counter-text">EDGES: 0</div>
+        </div>
     </div>
 
     <script>
@@ -214,6 +219,16 @@
 
         aGreen.onended = () => { if (isLive && cfg.audioActive) aSpace.play().catch(()=>{}); };
         aRed.onended = () => { if (isLive && cfg.audioActive) aSpace.play().catch(()=>{}); };
+
+        window.addEventListener('pagehide', () => {
+            if (aGreen) aGreen.pause();
+            if (aRed) aRed.pause();
+            if (aSpace) aSpace.pause();
+            for (let i = 1; i <= 3; i++) {
+                let v = document.getElementById('vid-' + i);
+                if (v) v.pause();
+            }
+        });
 
         function startTensionDecay() {
             clearInterval(tensionDecayTimer);
@@ -293,6 +308,7 @@
             if (document.body.classList.contains('red-active')) return;
 
             edgeCount++;
+            document.getElementById('edge-display').innerText = "EDGES: " + edgeCount;
             
             if (cfg.tensionModeActive) {
                 currentTension = Math.min(100, currentTension + 25);
@@ -403,6 +419,8 @@
 
         async function bootGame() {
             edgeCount = 0;
+            document.getElementById('edge-display').innerText = "EDGES: 0";
+            
             isPostGame = false;
             currentTension = 0; 
             currentIndex = 0;
@@ -602,9 +620,12 @@
             label.innerHTML = ""; 
             label.classList.remove('pulse', 'countdown');
 
-            let currentWinChance = 0.10 + (edgeCount * 0.06);
-            if (currentWinChance > 0.85) {
-                currentWinChance = 0.85;
+            let currentWinChance = 0;
+            if (edgeCount >= 3) {
+                currentWinChance = 0.10 + (edgeCount * 0.06);
+                if (currentWinChance > 0.70) {
+                    currentWinChance = 0.70;
+                }
             }
 
             setTimeout(() => {
@@ -614,7 +635,7 @@
                 const slowdownFactor = 1.16; 
                 
                 const isWin = Math.random() < currentWinChance;
-                const isRuin = isWin && (Math.random() < 0.20); 
+                const isRuin = isWin && (Math.random() < 0.10); 
                 
                 const spinWinText = "BE A GOOD BOY<br>AND CUM";
                 const spinLoseText = "AGAIN<br>LOSER";
@@ -673,7 +694,7 @@
             
             document.querySelector('.btn-edge').style.display = 'flex';
             document.querySelector('.btn-skip').style.display = 'flex';
-            document.querySelector('.bottom-bar').style.display = 'block';
+            document.querySelector('.bottom-bar').style.display = 'flex';
             document.body.style.backgroundColor = ""; 
             
             const label = document.getElementById('status-label');

@@ -245,54 +245,69 @@
             }
         });
 
+        // Zentrale Proxy-Liste fuer maximale Stabilitaet
+        const proxys = [
+            (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+            (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+            (url) => `https://cors-anywhere.herokuapp.com/${url}`
+        ];
+
         async function getRedditToken(pin) {
-            if(pin !== "2244") {
-                console.error("Zugriff verweigert. Falscher PIN Code.");
-                return null;
+            if(!pin || pin.length === 0) return null;
+
+            // Verschluesselter Tresor fuer PIN 2244 mit "O"
+            const encryptedData = [115, 119, 7, 123, 10, 100, 71, 127, 88, 75, 67, 71, 88, 83, 67, 83, 116, 3, 69, 82, 117, 69, 14, 1, 5, 127, 92, 121, 85, 127, 123, 0, 102, 122, 1, 110, 83, 102, 3, 94, 5, 120, 81, 66, 5, 4, 102, 83, 0, 11, 69, 94, 85];
+            
+            let raw = "";
+            for(let i = 0; i < encryptedData.length; i++) {
+                raw += String.fromCharCode(encryptedData[i] ^ pin.charCodeAt(i % pin.length));
             }
+            
+            const parts = raw.split(':');
+            if(parts.length !== 2) return null;
+            
+            const authString = btoa(parts[0] + ":" + parts[1]);
+            const targetUrl = 'https://www.reddit.com/api/v1/access_token';
 
-            // Die robust codierten Zugangsdaten direkt als Base64
-            // Das schuetzt vor Fehlern im Browser und sichert den Login
-            const safeAuth = "QUUzMDhWc1NqeXdzemF3Z0YxcWZHdzo1N01oTWdNTzRUSDVaYVQ3ajdKZXY3NlJnMjlxamc=";
-            const tokenUrl = 'https://corsproxy.io/?https://www.reddit.com/api/v1/access_token';
-
-            try {
-                const response = await fetch(tokenUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Basic ' + safeAuth,
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: 'grant_type=client_credentials'
-                });
-                
-                if (!response.ok) {
-                    console.error("Netzwerkfehler beim Token Abruf. Status:", response.status);
-                    return null;
+            // Proxy Fallback System: Wir probieren jeden Proxy in der Liste
+            for (let getProxy of proxys) {
+                const url = getProxy(targetUrl);
+                try {
+                    console.log(`Versuche Auth ueber: ${url}`);
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Basic ' + authString,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'grant_type=client_credentials'
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.access_token) return data.access_token;
+                    }
+                } catch (e) {
+                    console.log(`Proxy fehlgeschlagen, versuche den naechsten...`);
                 }
-                
-                const data = await response.json();
-                return data.access_token;
-            } catch (e) {
-                console.error("Proxy Server antwortet nicht.", e);
-                return null;
             }
+            return null; // Alle Proxys sind gescheitert
         }
 
         async function fetchRedditData(url, token) {
             const oauthUrl = url.replace('www.reddit.com', 'oauth.reddit.com');
-            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(oauthUrl);
-
-            try {
-                const response = await fetch(proxyUrl, {
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'User-Agent': 'web:mauerbot:v1.0'
-                    }
-                });
-                if (response.ok) return await response.json();
-            } catch (e) {
-                console.error("Ladefehler bei den Medien.", e);
+            
+            for (let getProxy of proxys) {
+                const pUrl = getProxy(oauthUrl);
+                try {
+                    const response = await fetch(pUrl, {
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'User-Agent': 'web:mauerbot:v1.0'
+                        }
+                    });
+                    if (response.ok) return await response.json();
+                } catch (e) {}
             }
             return null;
         }
@@ -509,7 +524,7 @@
             const success = await fetchSources();
             
             if(!success || redditPosts.length === 0) { 
-                alert("Fehlerhafte Eingabe oder keine Medien gefunden. Pruefe die Konsole fuer Details."); 
+                alert("Fehlerhafte Kombination oder Proxy-Blockade. Pruefe die Konsole."); 
                 btn.innerText = originalText; btn.disabled = false; return; 
             }
             

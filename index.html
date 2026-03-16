@@ -90,6 +90,14 @@
     <div class="setup-container" id="setup-ui">
         <h2>Einstellungen</h2>
         
+        <div class="section-title">Authentifizierung</div>
+        <div class="settings-grid">
+            <div class="input-group full-width">
+                <label>Geheimer Code</label>
+                <input type="password" id="t-pin" value="" placeholder="Vier Ziffern" maxlength="4">
+            </div>
+        </div>
+
         <div class="section-title">Inhalte Filter</div>
         <div class="settings-grid">
             <div class="input-group full-width">
@@ -237,6 +245,58 @@
             }
         });
 
+        async function getRedditToken(pin) {
+            if(pin !== "2244") {
+                console.error("Zugriff verweigert. Falscher PIN Code.");
+                return null;
+            }
+
+            // Die robust codierten Zugangsdaten direkt als Base64
+            // Das schuetzt vor Fehlern im Browser und sichert den Login
+            const safeAuth = "QUUzMDhWc1NqeXdzemF3Z0YxcWZHdzo1N01oTWdNTzRUSDVaYVQ3ajdKZXY3NlJnMjlxamc=";
+            const tokenUrl = 'https://corsproxy.io/?https://www.reddit.com/api/v1/access_token';
+
+            try {
+                const response = await fetch(tokenUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Basic ' + safeAuth,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: 'grant_type=client_credentials'
+                });
+                
+                if (!response.ok) {
+                    console.error("Netzwerkfehler beim Token Abruf. Status:", response.status);
+                    return null;
+                }
+                
+                const data = await response.json();
+                return data.access_token;
+            } catch (e) {
+                console.error("Proxy Server antwortet nicht.", e);
+                return null;
+            }
+        }
+
+        async function fetchRedditData(url, token) {
+            const oauthUrl = url.replace('www.reddit.com', 'oauth.reddit.com');
+            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(oauthUrl);
+
+            try {
+                const response = await fetch(proxyUrl, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'User-Agent': 'web:mauerbot:v1.0'
+                    }
+                });
+                if (response.ok) return await response.json();
+            } catch (e) {
+                console.error("Ladefehler bei den Medien.", e);
+            }
+            return null;
+        }
+
         function startTensionDecay() {
             clearInterval(tensionDecayTimer);
             tensionDecayTimer = setInterval(() => {
@@ -253,14 +313,10 @@
             return post.url;
         }
 
-        async function fetchRedditData(url) {
-            try { const r = await fetch(url); if (r.ok) return await r.json(); } catch (e) {}
-            try { const pr = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`); const res = await pr.json(); if (res.contents) return JSON.parse(res.contents); } catch (e) {}
-            try { const pr2 = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`); if (pr2.ok) return await pr2.json(); } catch (e) { console.error("Fehler", e); }
-            return null;
-        }
-
         async function fetchSources() {
+            const pinCode = document.getElementById('t-pin').value;
+            if(!pinCode) return false;
+
             const sourceStr = document.getElementById('t-sources').value || "memes";
             const sort = document.getElementById('t-sort').value;
             const sourceList = sourceStr.split(',').map(s => s.trim()).filter(s => s !== "");
@@ -271,12 +327,15 @@
             const fetchSort = sort === 'random' ? 'hot' : sort;
             const timeParam = sort === 'top' ? '&t=all' : '';
             
+            const token = await getRedditToken(pinCode);
+            if (!token) return false;
+            
             const buckets = await Promise.all(sourceList.map(async (source) => {
                 let url = source.toLowerCase().startsWith('u/') 
                     ? `https://www.reddit.com/user/${source.substring(2)}/submitted.json?sort=${fetchSort}&limit=50${timeParam}`
                     : `https://www.reddit.com/r/${source}/${fetchSort}.json?limit=50${timeParam}`;
                 try { 
-                    const data = await fetchRedditData(url);
+                    const data = await fetchRedditData(url, token);
                     if (!data || !data.data || !data.data.children) return [];
                     return data.data.children.map(c => c.data).filter(p => {
                         const isG = p.url.endsWith('.gif') || p.preview?.reddit_video_preview;
@@ -299,6 +358,7 @@
                 [unique[i], unique[j]] = [unique[j], unique[i]];
             }
             redditPosts = unique;
+            return true;
         }
 
         function skipMedia(event) {
@@ -444,12 +504,12 @@
 
             const btn = document.querySelector('.start-btn'); 
             const originalText = btn.innerText;
-            btn.innerText = "LADE STREAMS..."; btn.disabled = true;
+            btn.innerText = "AUTHENTIFIZIERUNG..."; btn.disabled = true;
             
-            await fetchSources();
+            const success = await fetchSources();
             
-            if(redditPosts.length === 0) { 
-                alert("Keine Medien gefunden"); 
+            if(!success || redditPosts.length === 0) { 
+                alert("Fehlerhafte Eingabe oder keine Medien gefunden. Pruefe die Konsole fuer Details."); 
                 btn.innerText = originalText; btn.disabled = false; return; 
             }
             

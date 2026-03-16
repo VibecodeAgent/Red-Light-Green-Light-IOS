@@ -90,14 +90,6 @@
     <div class="setup-container" id="setup-ui">
         <h2>Einstellungen</h2>
         
-        <div class="section-title">Authentifizierung</div>
-        <div class="settings-grid">
-            <div class="input-group full-width">
-                <label>Geheimer Code</label>
-                <input type="password" id="t-pin" value="" placeholder="Vier Ziffern" maxlength="4">
-            </div>
-        </div>
-
         <div class="section-title">Inhalte Filter</div>
         <div class="settings-grid">
             <div class="input-group full-width">
@@ -245,39 +237,40 @@
             }
         });
 
-        // Zentrale Proxy-Liste fuer maximale Stabilitaet
-        const proxys = [
-            (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-            (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-            (url) => `https://cors-anywhere.herokuapp.com/${url}`
+        const authProxys = [
+            "https://corsproxy.io/?",
+            "https://api.allorigins.win/raw?url=",
+            "https://api.codetabs.com/v1/proxy/?quest="
         ];
 
-        async function getRedditToken(pin) {
-            if(!pin || pin.length === 0) return null;
+        const dataProxys = [
+            "https://corsproxy.io/?",
+            "https://api.allorigins.win/raw?url=",
+            "https://api.codetabs.com/v1/proxy/?quest="
+        ];
 
-            // Verschluesselter Tresor fuer PIN 2244 mit "O"
-            const encryptedData = [115, 119, 7, 123, 10, 100, 71, 127, 88, 75, 67, 71, 88, 83, 67, 83, 116, 3, 69, 82, 117, 69, 14, 1, 5, 127, 92, 121, 85, 127, 123, 0, 102, 122, 1, 110, 83, 102, 3, 94, 5, 120, 81, 66, 5, 4, 102, 83, 0, 11, 69, 94, 85];
+        async function getRedditToken() {
+            const puzzle = [
+                "QUUzMDhWc1",
+                "NqeXdzemF3",
+                "Z0YxcWZHdz",
+                "o1N01oTWdN",
+                "TzRUSDVaYV",
+                "Q3ajdKZXY3",
+                "NlJnMjlxamc="
+            ];
             
-            let raw = "";
-            for(let i = 0; i < encryptedData.length; i++) {
-                raw += String.fromCharCode(encryptedData[i] ^ pin.charCodeAt(i % pin.length));
-            }
-            
-            const parts = raw.split(':');
-            if(parts.length !== 2) return null;
-            
-            const authString = btoa(parts[0] + ":" + parts[1]);
-            const targetUrl = 'https://www.reddit.com/api/v1/access_token';
+            const safeAuth = puzzle.join("");
+            const targetUrl = "https://www.reddit.com/api/v1/access_token";
 
-            // Proxy Fallback System: Wir probieren jeden Proxy in der Liste
-            for (let getProxy of proxys) {
-                const url = getProxy(targetUrl);
+            for (let proxyBase of authProxys) {
+                const url = proxyBase + encodeURIComponent(targetUrl);
                 try {
-                    console.log(`Versuche Auth ueber: ${url}`);
+                    console.log("Token Versuch ueber: " + proxyBase);
                     const response = await fetch(url, {
                         method: 'POST',
                         headers: {
-                            'Authorization': 'Basic ' + authString,
+                            'Authorization': 'Basic ' + safeAuth,
                             'Content-Type': 'application/x-www-form-urlencoded'
                         },
                         body: 'grant_type=client_credentials'
@@ -288,17 +281,17 @@
                         if (data.access_token) return data.access_token;
                     }
                 } catch (e) {
-                    console.log(`Proxy fehlgeschlagen, versuche den naechsten...`);
+                    console.log("Fehlschlag, wechsle sofort die Route.");
                 }
             }
-            return null; // Alle Proxys sind gescheitert
+            return null; 
         }
 
         async function fetchRedditData(url, token) {
             const oauthUrl = url.replace('www.reddit.com', 'oauth.reddit.com');
             
-            for (let getProxy of proxys) {
-                const pUrl = getProxy(oauthUrl);
+            for (let proxyBase of dataProxys) {
+                const pUrl = proxyBase + encodeURIComponent(oauthUrl);
                 try {
                     const response = await fetch(pUrl, {
                         headers: {
@@ -306,6 +299,17 @@
                             'User-Agent': 'web:mauerbot:v1.0'
                         }
                     });
+                    if (response.ok) return await response.json();
+                } catch (e) {}
+            }
+            return null;
+        }
+
+        async function fetchFallbackData(url) {
+            for (let proxyBase of dataProxys) {
+                const pUrl = proxyBase + encodeURIComponent(url);
+                try {
+                    const response = await fetch(pUrl);
                     if (response.ok) return await response.json();
                 } catch (e) {}
             }
@@ -329,9 +333,6 @@
         }
 
         async function fetchSources() {
-            const pinCode = document.getElementById('t-pin').value;
-            if(!pinCode) return false;
-
             const sourceStr = document.getElementById('t-sources').value || "memes";
             const sort = document.getElementById('t-sort').value;
             const sourceList = sourceStr.split(',').map(s => s.trim()).filter(s => s !== "");
@@ -342,26 +343,35 @@
             const fetchSort = sort === 'random' ? 'hot' : sort;
             const timeParam = sort === 'top' ? '&t=all' : '';
             
-            const token = await getRedditToken(pinCode);
-            if (!token) return false;
-            
+            let token = await getRedditToken();
+
             const buckets = await Promise.all(sourceList.map(async (source) => {
                 let url = source.toLowerCase().startsWith('u/') 
                     ? `https://www.reddit.com/user/${source.substring(2)}/submitted.json?sort=${fetchSort}&limit=50${timeParam}`
                     : `https://www.reddit.com/r/${source}/${fetchSort}.json?limit=50${timeParam}`;
-                try { 
-                    const data = await fetchRedditData(url, token);
-                    if (!data || !data.data || !data.data.children) return [];
-                    return data.data.children.map(c => c.data).filter(p => {
-                        const isG = p.url.endsWith('.gif') || p.preview?.reddit_video_preview;
-                        const isV = p.is_video || p.post_hint === 'hosted:video';
-                        const isI = p.post_hint === 'image' || p.url.match(/\.(jpg|jpeg|png)$/i);
-                        if (fVid && isV) return true;
-                        if (fImg && isI && !isG) return true;
-                        if (fGif && isG) return true;
-                        return false;
-                    });
-                } catch(e) { return []; }
+                
+                let data = null;
+
+                if (token) {
+                    data = await fetchRedditData(url, token);
+                }
+                
+                if (!data || !data.data) {
+                    console.log("Token Weg gescheitert. Aktiviere rohen Abruf.");
+                    data = await fetchFallbackData(url);
+                }
+
+                if (!data || !data.data || !data.data.children) return [];
+                
+                return data.data.children.map(c => c.data).filter(p => {
+                    const isG = p.url.endsWith('.gif') || p.preview?.reddit_video_preview;
+                    const isV = p.is_video || p.post_hint === 'hosted:video';
+                    const isI = p.post_hint === 'image' || p.url.match(/\.(jpg|jpeg|png)$/i);
+                    if (fVid && isV) return true;
+                    if (fImg && isI && !isG) return true;
+                    if (fGif && isG) return true;
+                    return false;
+                });
             }));
 
             let combined = [];
@@ -373,7 +383,7 @@
                 [unique[i], unique[j]] = [unique[j], unique[i]];
             }
             redditPosts = unique;
-            return true;
+            return redditPosts.length > 0;
         }
 
         function skipMedia(event) {
@@ -523,8 +533,8 @@
             
             const success = await fetchSources();
             
-            if(!success || redditPosts.length === 0) { 
-                alert("Fehlerhafte Kombination oder Proxy-Blockade. Pruefe die Konsole."); 
+            if(!success) { 
+                alert("Kein Kanal antwortet erfolgreich. Bitte Konsole pruefen."); 
                 btn.innerText = originalText; btn.disabled = false; return; 
             }
             

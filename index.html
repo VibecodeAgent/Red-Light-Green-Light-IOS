@@ -6,9 +6,7 @@
     <title>Red Light Green Light</title>
     <style>
         :root { --bg: #0b0f19; --card: #161e2d; --accent: #38bdf8; --green: #10b981; --red: #ef4444; --white: #f8fafc; --input-bg: rgba(11, 15, 25, 0.9); }
-        
         html, body { margin: 0; padding: 0; width: 100vw; height: 100dvh; font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg); color: var(--white); display: flex; justify-content: center; align-items: center; transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; -webkit-tap-highlight-color: transparent; }
-        
         .setup-container { padding: 2.5rem; border-radius: 2.5rem; width: 95%; max-width: 550px; background: var(--card); box-shadow: 0 30px 60px rgba(0,0,0,0.9); z-index: 100; text-align: center; max-height: 92dvh; overflow-y: auto; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); scrollbar-width: none; box-sizing: border-box; }
         .setup-container::-webkit-scrollbar { display: none; }
         h2 { margin: 0 0 1.5rem 0; color: var(--accent); font-size: 2rem; font-weight: 800; }
@@ -23,39 +21,25 @@
         .checkbox-item { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
         .checkbox-item input { width: 1.2rem; height: 1.2rem; cursor: pointer; appearance: checkbox; -webkit-appearance: checkbox; }
         .start-btn { width: 100%; background: var(--accent); color: var(--bg); border: none; padding: 1.4rem; border-radius: 1.5rem; font-weight: 900; font-size: 1.3rem; cursor: pointer; margin-top: 2rem; transition: all 0.3s; text-transform: uppercase; }
-        
         #game-ui { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 10; box-sizing: border-box; }
-        
         .btn-close { position: absolute; top: calc(env(safe-area-inset-top, 25px) + 15px); left: max(env(safe-area-inset-left, 0px), 8px); background: rgba(0,0,0,0.15); border: none; color: rgba(255,255,255,0.7); width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(5px); transition: background-color 0.2s; }
         .btn-close:active { background: rgba(0,0,0,0.4); color: #fff; }
-
         .btn-edge { position: absolute; top: calc(50% - 2.2rem); left: max(env(safe-area-inset-left, 0px), 8px); transform: translateY(-50%); background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); color: rgba(239, 68, 68, 0.4); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(5px); transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
         .btn-edge:active { transform: translateY(-50%) scale(0.85); background: rgba(239, 68, 68, 0.3); color: #ffffff; border-color: rgba(239, 68, 68, 0.5); }
-
         .btn-skip { position: absolute; top: calc(50% + 2.2rem); left: max(env(safe-area-inset-left, 0px), 8px); transform: translateY(-50%); background: rgba(0, 0, 0, 0.08); border: 1px solid rgba(255, 255, 255, 0.03); color: rgba(255, 255, 255, 0.3); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(5px); transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
         .btn-skip:active { transform: translateY(-50%) scale(0.85); background: rgba(0, 0, 0, 0.3); color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.1); }
-
         .media-background { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; z-index: 1; background: transparent; overflow: hidden; }
-        
         .media-buffer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.4s ease; z-index: 1; }
         .media-buffer.active { opacity: 1; z-index: 2; }
-        
-        .media-layer { 
-            width: 100%; height: 100%; object-fit: contain; object-position: center; border: none; outline: none; background: transparent; position: absolute; top: 0; left: 0; display: none; transform: scale(1.01);
-        }
-        
+        .media-layer { width: 100%; height: 100%; object-fit: contain; object-position: center; border: none; outline: none; background: transparent; position: absolute; top: 0; left: 0; display: none; transform: scale(1.01); }
         .top-display { position: absolute; top: env(safe-area-inset-top, 25px); left: 0; width: 100%; z-index: 50; text-align: center; text-shadow: 0 4px 20px rgba(0,0,0,0.9); pointer-events: none; }
-        
         .status-text { font-size: clamp(3rem, 12vw, 5.5rem); font-weight: 900; text-transform: uppercase; letter-spacing: -2px; margin: 0; line-height: 1.1; transition: font-size 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .status-text.countdown { font-size: clamp(4.5rem, 18vw, 8.25rem); }
         .status-text.adaptive { font-size: clamp(2.5rem, 9vw, 4rem); letter-spacing: -1px; line-height: 1.1; }
-
         .bottom-bar { position: absolute; bottom: calc(env(safe-area-inset-bottom, 15px) + 20px); left: 50%; transform: translateX(-50%); width: 90%; max-width: 650px; z-index: 50; display: flex; flex-direction: column; align-items: center; }
         .progress-container { width: 100%; height: 12px; background: rgba(255,255,255,0.3); border-radius: 20px; position: relative; overflow: visible; box-shadow: 0 2px 10px rgba(0,0,0,0.3); margin-bottom: 8px; }
         #progress-bar { width: 0%; height: 100%; background: var(--white); border-radius: 20px; transition: width 0.1s linear; }
-        
         .edge-counter-text { font-size: 0.55rem; font-weight: 300; color: rgba(255,255,255,0.4); letter-spacing: 2px; text-transform: uppercase; margin: 0; line-height: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        
         body.green-active { background-color: var(--green); }
         body.red-active { background-color: var(--red); }
         .pulse { animation: pulse-anim 0.4s infinite alternate; }
@@ -70,32 +54,24 @@
 
     <div class="setup-container" id="setup-ui">
         <h2>Einstellungen</h2>
-        
+
         <div class="section-title">Inhalte Filter</div>
         <div class="settings-grid">
             <div class="input-group full-width">
-                <label>Quellen</label>
-                <input type="text" id="t-sources" value="" placeholder="z.B. memes, pics">
-            </div>
-            <div class="input-group full-width">
-                <label>Medientypen</label>
-                <div class="checkbox-group">
-                    <label class="checkbox-item"><input type="checkbox" id="f-img" checked> Bilder</label>
-                    <label class="checkbox-item"><input type="checkbox" id="f-vid" checked> Videos</label>
-                    <label class="checkbox-item"><input type="checkbox" id="f-gif" checked> GIFs</label>
-                </div>
+                <label>Tags (kommagetrennt)</label>
+                <input type="text" id="t-sources" value="" placeholder="z.B. blonde, milf, amateur">
             </div>
             <div class="input-group">
                 <label>Sortierung</label>
                 <select id="t-sort">
-                    <option value="hot" selected>Beliebt</option>
-                    <option value="random">Zufall</option>
+                    <option value="hot" selected>Trending</option>
                     <option value="new">Neu</option>
                     <option value="top">Top</option>
+                    <option value="random">Zufall</option>
                 </select>
             </div>
             <div class="input-group">
-                <label>Wechsel</label>
+                <label>Wechsel (Sek)</label>
                 <input type="number" id="t-img-dur" value="40" min="1">
             </div>
         </div>
@@ -103,22 +79,19 @@
         <div class="section-title">Spielregeln</div>
         <div class="settings-grid">
             <div class="input-group full-width">
-                <label>Gesamtzeit</label>
+                <label>Gesamtzeit (Min)</label>
                 <input type="number" id="t-total-min" value="12" step="0.5" min="0.1">
             </div>
-            
             <div class="input-group full-width">
                 <label>Audio Soundeffekte</label>
                 <div class="checkbox-group" style="padding: 0.8rem;">
                     <label class="checkbox-item"><input type="checkbox" id="f-audio"> Sounds aktivieren</label>
                 </div>
             </div>
-
             <div class="input-group"><label>Grün Min</label><input type="number" id="t-gmin" value="4"></div>
             <div class="input-group"><label>Grün Max</label><input type="number" id="t-gmax" value="25"></div>
             <div class="input-group"><label>Rot Min</label><input type="number" id="t-rmin" value="4"></div>
             <div class="input-group"><label>Rot Max</label><input type="number" id="t-rmax" value="15"></div>
-            
             <div class="input-group full-width">
                 <label>Lange Pause</label>
                 <div class="checkbox-group" style="padding: 0.8rem;">
@@ -126,17 +99,15 @@
                 </div>
             </div>
             <div class="input-group full-width">
-                <label>Pausen Dauer</label>
+                <label>Pausen Dauer (Sek)</label>
                 <input type="number" id="t-long-break-dur" value="25" min="5">
             </div>
-            
             <div class="input-group full-width">
                 <label>Dynamic Intervals</label>
                 <div class="checkbox-group" style="padding: 0.8rem;">
                     <label class="checkbox-item"><input type="checkbox" id="f-tension-mode" checked> Aktiviert</label>
                 </div>
             </div>
-            
             <div class="input-group full-width">
                 <label>Hard Mode</label>
                 <div class="checkbox-group" style="padding: 0.8rem;">
@@ -152,11 +123,9 @@
         <button class="btn-close" onclick="location.reload()" aria-label="Beenden">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
-        
         <button class="btn-edge" onclick="triggerEdge(event)" aria-label="Notbremse">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         </button>
-
         <button class="btn-skip" onclick="skipMedia(event)" aria-label="Naechstes Medium">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </button>
@@ -175,9 +144,9 @@
                 <video id="vid-3" class="media-layer" autoplay muted loop playsinline></video>
             </div>
         </div>
-        
+
         <div class="top-display"><h1 id="status-label" class="status-text"></h1></div>
-        
+
         <div class="bottom-bar">
             <div class="progress-container"><div id="progress-bar"></div></div>
             <div id="edge-display" class="edge-counter-text">EDGES: 0</div>
@@ -185,357 +154,379 @@
     </div>
 
     <script>
-        let cfg = {}; let isLive = false; let startT; let clock; let countdownInt; let mediaInt; let animFrame;
-        let redditPosts = []; 
-        let edgeCount = 0; 
-        let isPostGame = false; 
-        let currentTension = 0; 
-        let tensionDecayTimer;
+        // ── Config ───────────────────────────────────────────────────────────────
+        const WORKER_BASE = "https://rlglpxy.vcaios.workers.dev";
+
+        // ── State ────────────────────────────────────────────────────────────────
+        let cfg = {}, isLive = false, startT, clock, countdownInt, mediaInt, animFrame;
+        let posts = [];
+        let edgeCount = 0, isPostGame = false, currentTension = 0, tensionDecayTimer;
         let currentIndex = 0;
-        let bufferState = [ { id: 1, reqIdx: -1, isReady: false }, { id: 2, reqIdx: -1, isReady: false }, { id: 3, reqIdx: -1, isReady: false } ];
+        let bufferState = [
+            { id: 1, reqIdx: -1, isReady: false },
+            { id: 2, reqIdx: -1, isReady: false },
+            { id: 3, reqIdx: -1, isReady: false }
+        ];
 
         const aGreen = document.getElementById('sfx-green');
-        const aRed = document.getElementById('sfx-red');
+        const aRed   = document.getElementById('sfx-red');
         const aSpace = document.getElementById('sfx-space');
 
         aGreen.onended = () => { if (isLive && cfg.audioActive) aSpace.play().catch(()=>{}); };
-        aRed.onended = () => { if (isLive && cfg.audioActive) aSpace.play().catch(()=>{}); };
+        aRed.onended   = () => { if (isLive && cfg.audioActive) aSpace.play().catch(()=>{}); };
 
         window.addEventListener('pagehide', () => {
-            if (aGreen) aGreen.pause(); if (aRed) aRed.pause(); if (aSpace) aSpace.pause();
-            for (let i = 1; i <= 3; i++) { let v = document.getElementById('vid-' + i); if (v) v.pause(); }
+            [aGreen, aRed, aSpace].forEach(a => a.pause());
+            for (let i = 1; i <= 3; i++) document.getElementById('vid-' + i)?.pause();
         });
 
-        // DEINE ZENTRALE INFRASTRUKTUR
-        const WORKER_BASE = "https://rlglpxy.vcaios.workers.dev";
-
-        async function getRedditToken() {
-            console.log("%c--- AUTHENTIFIZIERUNG START ---", "color: #a855f7; font-weight: bold;");
-            try {
-                const r = await fetch(`${WORKER_BASE}/auth`);
-                if (r.ok) {
-                    const data = await r.json();
-                    if (data.access_token) {
-                        console.log("%c✅ [ERFOLG] Token erfolgreich geladen.", "color: #10b981;");
-                        return data.access_token;
-                    }
-                }
-                console.warn(`%c❌ [FEHLER] Token-Abruf verweigert (Status: ${r.status}).`, "color: #ef4444;");
-            } catch (e) { console.error("%c❌ [KRITISCH] Worker /auth nicht erreichbar.", "color: #ef4444; font-weight: bold;"); }
-            return null;
-        }
-
-        // DIE PROFESSORALE 5-STUFEN-DIAGNOSE LOGIK
-        async function fetchRedditData(originalUrl, token) {
-            console.log(`%c--- NEUE DATEN-ANALYSE: ${originalUrl.split('/r/')[1]?.split('/')[0] || 'Feed'} ---`, "color: #38bdf8; font-weight: bold; font-size: 13px; margin-top: 10px;");
-
-            // STUFE 1: Eigener Worker - Offizielle API
-            if (token) {
-                console.log("%c⏳ [STUFE 1] Eigener API Kanal (OAuth)...", "color: #fbbf24;");
-                const oauthUrl = originalUrl.replace('www.reddit.com', 'oauth.reddit.com');
-                try {
-                    const r1 = await fetch(`${WORKER_BASE}/data?url=${encodeURIComponent(oauthUrl)}`, {
-                        headers: { 'Authorization': 'Bearer ' + token }
-                    });
-                    if (r1.ok) {
-                        const d = await r1.json();
-                        if (d?.data?.children?.length > 0) { 
-                            console.log("%c✅ [ERFOLG] Stufe 1 hat geliefert!", "color: #10b981; font-weight: bold;"); 
-                            return d; 
-                        } else { console.warn("⚠️ [INFO] Stufe 1 (API) lieferte leere Liste (Zensur aktiv)."); }
-                    } else { console.warn(`❌ [FEHLER] Stufe 1 abgelehnt. Status: ${r1.status}`); }
-                } catch (e) { console.warn("❌ [FEHLER] Stufe 1 Netzwerkfehler."); }
-            } else { console.log("⚠️ [INFO] Kein Token, überspringe Stufe 1."); }
-
-            // STUFE 2: Eigener Worker - Stealth Tarn Modus
-            console.log("%c⏳ [STUFE 2] Eigener Stealth Kanal (Raw/JSON)...", "color: #fbbf24;");
-            try {
-                const r2 = await fetch(`${WORKER_BASE}/raw?url=${encodeURIComponent(originalUrl)}`);
-                if (r2.ok) {
-                    const d = await r2.json();
-                    if (d?.data?.children?.length > 0) { 
-                        console.log("%c✅ [ERFOLG] Stufe 2 hat geliefert!", "color: #10b981; font-weight: bold;"); 
-                        return d; 
-                    } else { console.warn("⚠️ [INFO] Stufe 2 lieferte leere Liste."); }
-                } else { console.warn(`❌ [FEHLER] Stufe 2 abgelehnt. Status: ${r2.status}`); }
-            } catch (e) { console.warn("❌ [FEHLER] Stufe 2 Netzwerkfehler."); }
-
-            // STUFE 3: Eigener Worker - Neutraler Proxy
-            console.log("%c⏳ [STUFE 3] Eigener Universal Tunnel...", "color: #fbbf24;");
-            try {
-                const r3 = await fetch(`${WORKER_BASE}/proxy?url=${encodeURIComponent(originalUrl)}`);
-                if (r3.ok) {
-                    const d = await r3.json();
-                    if (d?.data?.children?.length > 0) { 
-                        console.log("%c✅ [ERFOLG] Stufe 3 hat geliefert!", "color: #10b981; font-weight: bold;"); 
-                        return d; 
-                    }
-                } else { console.warn(`❌ [FEHLER] Stufe 3 abgelehnt. Status: ${r3.status}`); }
-            } catch (e) { console.warn("❌ [FEHLER] Stufe 3 Netzwerkfehler."); }
-
-            // STUFE 4: AllOrigins (Fremddienst)
-            console.log("%c⏳ [STUFE 4] Fremddienst: AllOrigins...", "color: #f97316;");
-            try {
-                const r4 = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(originalUrl)}`);
-                if (r4.ok) {
-                    const res4 = await r4.json();
-                    if (res4.contents) {
-                        const parsed = JSON.parse(res4.contents);
-                        if (parsed?.data?.children?.length > 0) {
-                            console.log("%c✅ [ERFOLG] Stufe 4 hat geliefert!", "color: #10b981; font-weight: bold;"); 
-                            return parsed;
-                        }
-                    }
-                }
-            } catch (e) { console.warn("❌ [FEHLER] Stufe 4 gescheitert."); }
-
-            // STUFE 5: Corsproxy (Fremddienst)
-            console.log("%c⏳ [STUFE 5] Letzter Rettungsanker: Corsproxy...", "color: #ef4444;");
-            try {
-                const r5 = await fetch(`https://corsproxy.io/?${encodeURIComponent(originalUrl)}`);
-                if (r5.ok) { 
-                    const d = await r5.json();
-                    if (d?.data?.children?.length > 0) {
-                        console.log("%c✅ [ERFOLG] Stufe 5 hat geliefert!", "color: #10b981; font-weight: bold;"); 
-                        return d;
-                    }
-                }
-            } catch (e) { console.warn("❌ [FEHLER] Stufe 5 gescheitert."); }
-
-            console.error("%c⛔ KRITISCHER FEHLER: Alle 5 Kanäle sind blockiert oder leer!", "color: red; font-size: 14px; font-weight: bold;");
-            return null;
-        }
-
-        function startTensionDecay() {
-            clearInterval(tensionDecayTimer);
-            tensionDecayTimer = setInterval(() => { if (isLive && currentTension > 0) currentTension = Math.max(0, currentTension - 1); }, 4000); 
-        }
-
-        function getHDUrl(post) {
-            if (post.preview?.images?.[0]?.source?.url) return post.preview.images[0].source.url.replace(/&amp;/g, '&');
-            return post.url;
-        }
-
+        // ── Redgifs via Worker ───────────────────────────────────────────────────
         async function fetchSources() {
-            const sourceStr  = document.getElementById('t-sources').value || 'amateur';
+            const sourceStr  = document.getElementById('t-sources').value.trim() || 'amateur';
             const sort       = document.getElementById('t-sort').value;
-            const sourceList = sourceStr.split(',').map(s => s.trim()).filter(Boolean);
-            const fVid = document.getElementById('f-vid').checked;
-            const fGif = document.getElementById('f-gif').checked;
-            // Hinweis: Redgifs liefert primär Videos/GIFs — fImg-Checkbox hat kaum Effekt
 
-            // Ein Request pro Tag/Quelle, parallel
-            const buckets = await Promise.all(sourceList.map(async (tag) => {
-                const url = `${WORKER_BASE}/search?tags=${encodeURIComponent(tag)}&sort=${sort}&count=50`;
-                try {
-                    const r = await fetch(url);
-                    if (!r.ok) { console.warn(`Worker Fehler für "${tag}": ${r.status}`); return []; }
-                    const data = await r.json();
-                    return Array.isArray(data.posts) ? data.posts : [];
-                } catch (e) {
-                    console.error(`Netzwerkfehler für "${tag}":`, e);
-                    return [];
+            // Alle Tags in einem einzigen Request — Worker splittet intern
+            const url = `${WORKER_BASE}/search?tags=${encodeURIComponent(sourceStr)}&sort=${sort}&count=50`;
+
+            try {
+                const r = await fetch(url);
+                if (!r.ok) {
+                    console.error(`Worker /search → HTTP ${r.status}`);
+                    return false;
                 }
-            }));
+                const data = await r.json();
+                if (!Array.isArray(data.posts) || data.posts.length === 0) {
+                    console.warn('Worker lieferte leere Posts-Liste.');
+                    return false;
+                }
 
-            // Medientypen filtern (Worker gibt bereits normalisierten Shape zurück)
-            let combined = [];
-            buckets.forEach(posts => {
-                const filtered = posts.filter(p => {
-                    const isVid = p.is_video && p.post_hint === 'hosted:video';
-                    const isGif = !!p.preview?.reddit_video_preview;
-                    if (fVid && isVid) return true;
-                    if (fGif && isGif) return true;
-                    return !fVid && !fGif; // Fallback: alles zeigen wenn nichts ausgewählt
-                });
-                combined = combined.concat(filtered);
-            });
+                // Mischen
+                let arr = data.posts;
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                posts = arr;
+                console.log(`✅ ${posts.length} Clips geladen.`);
+                return true;
 
-            // Deduplizieren & mischen
-            let unique = [...new Map(combined.map(p => [p.id, p])).values()];
-            for (let i = unique.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [unique[i], unique[j]] = [unique[j], unique[i]];
+            } catch (e) {
+                console.error('fetchSources Fehler:', e);
+                return false;
             }
-            redditPosts = unique; // Variable heißt noch redditPosts — ist ok, nur ein Name
-            return redditPosts.length > 0;
         }
 
-        function skipMedia(event) {
-            if (event) event.stopPropagation(); 
-            if ((!isLive && !isPostGame) || redditPosts.length === 0) return;
-            clearTimeout(mediaInt); currentIndex++; manageBuffers();
-        }
-
-        function triggerEdge(event) {
-            if (event) event.stopPropagation(); 
-            if (!isLive) return;
-            if (document.body.classList.contains('red-active')) return;
-            edgeCount++; document.getElementById('edge-display').innerText = "EDGES: " + edgeCount;
-            if (cfg.tensionModeActive) currentTension = Math.min(100, currentTension + 25);
-            clearTimeout(clock); clearInterval(countdownInt); executeRedPhase(cfg.longBreakDur, true);
-        }
-
+        // ── Buffer / Media ───────────────────────────────────────────────────────
         function loadPostIntoBuffer(idx) {
-            if (redditPosts.length === 0) return;
-            let safeIdx = idx % redditPosts.length;
-            let bId = (idx % 3) + 1;
-            let state = bufferState[bId - 1];
+            if (posts.length === 0) return;
+            const safeIdx = idx % posts.length;
+            const bId     = (idx % 3) + 1;
+            const state   = bufferState[bId - 1];
             if (state.reqIdx === idx) return;
-            state.reqIdx = idx; state.isReady = false;
 
-            const img = document.getElementById('img-' + bId); const vid = document.getElementById('vid-' + bId); const post = redditPosts[safeIdx];
-            img.style.display = 'none'; vid.style.display = 'none'; vid.pause(); vid.removeAttribute('src'); img.removeAttribute('src'); vid.load();
+            state.reqIdx  = idx;
+            state.isReady = false;
 
-            const handleReady = () => { if (state.reqIdx === idx) { state.isReady = true; checkDisplay(); } };
-            const handleErr = () => { if (state.reqIdx === idx) { state.isReady = true; if (currentIndex === idx) { currentIndex++; manageBuffers(); } } };
+            const img  = document.getElementById('img-' + bId);
+            const vid  = document.getElementById('vid-' + bId);
+            const post = posts[safeIdx];
 
-            img.onload = handleReady; img.onerror = handleErr; vid.onloadeddata = handleReady; vid.onerror = handleErr;
+            img.style.display = 'none';
+            vid.style.display = 'none';
+            vid.pause();
+            vid.removeAttribute('src');
+            img.removeAttribute('src');
+            vid.load();
 
-            if (post.is_video && post.media?.reddit_video) { vid.src = post.media.reddit_video.fallback_url; vid.style.display = 'block'; vid.load(); } 
-            else if (post.preview?.reddit_video_preview) { vid.src = post.preview.reddit_video_preview.fallback_url; vid.style.display = 'block'; vid.load(); } 
-            else { img.src = getHDUrl(post); img.style.display = 'block'; }
+            const handleReady = () => {
+                if (state.reqIdx === idx) { state.isReady = true; checkDisplay(); }
+            };
+            const handleErr = () => {
+                if (state.reqIdx === idx) {
+                    state.isReady = true;
+                    if (currentIndex === idx) { currentIndex++; manageBuffers(); }
+                }
+            };
+
+            img.onload       = handleReady;
+            img.onerror      = handleErr;
+            vid.onloadeddata = handleReady;
+            vid.onerror      = handleErr;
+
+            // Redgifs liefert .mp4 → immer als Video behandeln
+            if (post.is_video && post.media?.reddit_video?.fallback_url) {
+                vid.src = post.media.reddit_video.fallback_url;
+                vid.style.display = 'block';
+                vid.load();
+            } else if (post.preview?.reddit_video_preview?.fallback_url) {
+                vid.src = post.preview.reddit_video_preview.fallback_url;
+                vid.style.display = 'block';
+                vid.load();
+            } else {
+                // Fallback: als Bild laden (poster-URL)
+                const imgUrl = post.preview?.images?.[0]?.source?.url || post.url;
+                img.src = imgUrl;
+                img.style.display = 'block';
+            }
         }
 
         function checkDisplay() {
-            if (redditPosts.length === 0) return;
-            let bId = (currentIndex % 3) + 1;
-            let state = bufferState[bId - 1];
+            if (posts.length === 0) return;
+            const bId   = (currentIndex % 3) + 1;
+            const state = bufferState[bId - 1];
 
             if (state.isReady && state.reqIdx === currentIndex) {
                 document.querySelectorAll('.media-buffer').forEach(b => b.classList.remove('active'));
                 document.getElementById('buffer-' + bId).classList.add('active');
-                let vid = document.getElementById('vid-' + bId);
-                if (vid.style.display === 'block') { let p = vid.play(); if(p !== undefined) p.catch(()=>{}); }
-                for (let i = 1; i <= 3; i++) { if (i !== bId) document.getElementById('vid-' + i).pause(); }
+
+                const vid = document.getElementById('vid-' + bId);
+                if (vid.style.display === 'block') vid.play().catch(()=>{});
+                for (let i = 1; i <= 3; i++) {
+                    if (i !== bId) document.getElementById('vid-' + i).pause();
+                }
+
                 clearTimeout(mediaInt);
-                if (!isPostGame) mediaInt = setTimeout(() => { currentIndex++; manageBuffers(); }, cfg.imgDur * 1000);
+                if (!isPostGame) {
+                    mediaInt = setTimeout(() => { currentIndex++; manageBuffers(); }, cfg.imgDur * 1000);
+                }
             }
         }
 
         function manageBuffers() {
-            if (redditPosts.length === 0) return;
-            loadPostIntoBuffer(currentIndex); loadPostIntoBuffer(currentIndex + 1); loadPostIntoBuffer(currentIndex + 2); checkDisplay();
+            if (posts.length === 0) return;
+            loadPostIntoBuffer(currentIndex);
+            loadPostIntoBuffer(currentIndex + 1);
+            loadPostIntoBuffer(currentIndex + 2);
+            checkDisplay();
         }
 
+        function skipMedia(event) {
+            if (event) event.stopPropagation();
+            if ((!isLive && !isPostGame) || posts.length === 0) return;
+            clearTimeout(mediaInt);
+            currentIndex++;
+            manageBuffers();
+        }
+
+        // ── Spannung ─────────────────────────────────────────────────────────────
+        function startTensionDecay() {
+            clearInterval(tensionDecayTimer);
+            tensionDecayTimer = setInterval(() => {
+                if (isLive && currentTension > 0) currentTension = Math.max(0, currentTension - 1);
+            }, 4000);
+        }
+
+        // ── Boot ─────────────────────────────────────────────────────────────────
         async function bootGame() {
-            edgeCount = 0; document.getElementById('edge-display').innerText = "EDGES: 0";
+            edgeCount = 0;
+            document.getElementById('edge-display').innerText = "EDGES: 0";
             isPostGame = false; currentTension = 0; currentIndex = 0;
             bufferState.forEach(b => { b.reqIdx = -1; b.isReady = false; });
+            posts = [];
 
             const audioWantsActive = document.getElementById('f-audio').checked;
-            if (audioWantsActive) { [aGreen, aRed, aSpace].forEach(a => { a.play().catch(()=>{}); a.pause(); a.currentTime = 0; }); }
-
-            const btn = document.querySelector('.start-btn'); 
-            const originalText = btn.innerText; btn.innerText = "SYSTEM HOCHFAHREN..."; btn.disabled = true;
-            
-            console.clear(); // Konsole säubern für einen frischen Start
-            const success = await fetchSources();
-            
-            if(!success) { 
-                alert("Medienabruf gescheitert. Bitte Konsole (F12) prüfen."); 
-                btn.innerText = originalText; btn.disabled = false; return; 
+            if (audioWantsActive) {
+                [aGreen, aRed, aSpace].forEach(a => { a.play().catch(()=>{}); a.pause(); a.currentTime = 0; });
             }
-            
-            const totalSec = parseFloat(document.getElementById('t-total-min').value) * 60;
+
+            const btn = document.querySelector('.start-btn');
+            btn.innerText = "LÄDT...";
+            btn.disabled  = true;
+
+            const success = await fetchSources();
+
+            if (!success) {
+                alert("Keine Clips geladen. Tags prüfen oder Konsole öffnen (F12).");
+                btn.innerText = "SPIEL STARTEN";
+                btn.disabled  = false;
+                return;
+            }
+
             cfg = {
-                total: totalSec, imgDur: parseFloat(document.getElementById('t-img-dur').value), audioActive: audioWantsActive,
-                gMin: parseFloat(document.getElementById('t-gmin').value), gMax: parseFloat(document.getElementById('t-gmax').value),
-                rMin: parseFloat(document.getElementById('t-rmin').value), rMax: parseFloat(document.getElementById('t-rmax').value),
-                tensionModeActive: document.getElementById('f-tension-mode').checked, longBreakActive: document.getElementById('f-long-break').checked,
-                longBreakDur: parseFloat(document.getElementById('t-long-break-dur').value), hardModeActive: document.getElementById('f-hard-mode').checked
+                total:             parseFloat(document.getElementById('t-total-min').value) * 60,
+                imgDur:            parseFloat(document.getElementById('t-img-dur').value),
+                audioActive:       audioWantsActive,
+                gMin:              parseFloat(document.getElementById('t-gmin').value),
+                gMax:              parseFloat(document.getElementById('t-gmax').value),
+                rMin:              parseFloat(document.getElementById('t-rmin').value),
+                rMax:              parseFloat(document.getElementById('t-rmax').value),
+                tensionModeActive: document.getElementById('f-tension-mode').checked,
+                longBreakActive:   document.getElementById('f-long-break').checked,
+                longBreakDur:      parseFloat(document.getElementById('t-long-break-dur').value),
+                hardModeActive:    document.getElementById('f-hard-mode').checked
             };
-            
-            document.getElementById('setup-ui').style.display = 'none'; document.getElementById('game-ui').style.display = 'block';
-            isLive = true; startT = Date.now(); startTensionDecay(); engine(); cycle('green'); manageBuffers();
+
+            document.getElementById('setup-ui').style.display = 'none';
+            document.getElementById('game-ui').style.display  = 'block';
+
+            isLive = true; startT = Date.now();
+            startTensionDecay(); engine(); cycle('green'); manageBuffers();
         }
 
+        // ── Spielloop ────────────────────────────────────────────────────────────
         function engine() {
             if (!isLive) return;
-            let elapsed = (Date.now() - startT) / 1000;
-            document.getElementById('progress-bar').style.width = Math.min((elapsed/cfg.total)*100, 100) + "%";
+            const elapsed = (Date.now() - startT) / 1000;
+            document.getElementById('progress-bar').style.width = Math.min((elapsed / cfg.total) * 100, 100) + "%";
             if (elapsed >= cfg.total) finish(); else animFrame = requestAnimationFrame(engine);
         }
 
         function runCountdown(duration) {
-            clearInterval(countdownInt); const endT = Date.now() + (duration * 1000); const label = document.getElementById('status-label');
-            const update = () => { let left = (endT - Date.now()) / 1000; if (left > 0) label.innerHTML = Math.ceil(left); else { label.innerHTML = ""; clearInterval(countdownInt); } };
-            update(); countdownInt = setInterval(update, 100);
+            clearInterval(countdownInt);
+            const endT  = Date.now() + duration * 1000;
+            const label = document.getElementById('status-label');
+            const update = () => {
+                const left = (endT - Date.now()) / 1000;
+                label.innerHTML = left > 0 ? Math.ceil(left) : "";
+                if (left <= 0) clearInterval(countdownInt);
+            };
+            update();
+            countdownInt = setInterval(update, 100);
         }
 
         function executeRedPhase(dur, isForcedEdge = false) {
-            clearInterval(countdownInt); document.body.className = 'red-active'; const label = document.getElementById('status-label');
+            clearInterval(countdownInt);
+            document.body.className = 'red-active';
+            const label = document.getElementById('status-label');
             label.classList.remove('countdown');
-            if (isForcedEdge) { label.innerHTML = "DONT YOU <br> DARE CUM"; label.classList.add('adaptive', 'pulse'); } 
-            else { label.innerHTML = "HANDS<br>OFF"; label.classList.remove('adaptive'); }
-            if (cfg.audioActive) { aSpace.pause(); aSpace.currentTime = 0; aGreen.pause(); aGreen.currentTime = 0; aRed.currentTime = 0; aRed.play().catch(()=>{}); }
+            if (isForcedEdge) {
+                label.innerHTML = "DONT YOU <br> DARE CUM";
+                label.classList.add('adaptive', 'pulse');
+            } else {
+                label.innerHTML = "HANDS<br>OFF";
+                label.classList.remove('adaptive');
+            }
+            if (cfg.audioActive) {
+                aSpace.pause(); aSpace.currentTime = 0;
+                aGreen.pause(); aGreen.currentTime = 0;
+                aRed.currentTime = 0; aRed.play().catch(()=>{});
+            }
             clock = setTimeout(() => cycle('green'), dur * 1000);
         }
 
         function cycle(type) {
             if (!isLive) return;
             let dur;
-            if (type === 'red' && cfg.longBreakActive && Math.random() < 0.10) dur = cfg.longBreakDur; 
-            else {
+            if (type === 'red' && cfg.longBreakActive && Math.random() < 0.10) {
+                dur = cfg.longBreakDur;
+            } else {
+                const r = Math.random();
                 if (cfg.tensionModeActive) {
-                    let r = Math.random(); 
-                    if (currentTension <= 20) dur = type === 'green' ? cfg.gMin + (1 - Math.pow(r, 5.0)) * (cfg.gMax - cfg.gMin) : cfg.rMin + Math.pow(r, 5.0) * (cfg.rMax - cfg.rMin);
-                    else if (currentTension >= 75) dur = type === 'green' ? cfg.gMin + Math.pow(r, 3.0) * (cfg.gMax - cfg.gMin) : cfg.rMin + (1 - Math.pow(r, 3.0)) * (cfg.rMax - cfg.rMin);
-                    else dur = type === 'green' ? cfg.gMin + r * (cfg.gMax - cfg.gMin) : cfg.rMin + r * (cfg.rMax - cfg.rMin);
-                } else dur = type === 'green' ? cfg.gMin + Math.random() * (cfg.gMax - cfg.gMin) : cfg.rMin + Math.random() * (cfg.rMax - cfg.rMin);
+                    if (currentTension <= 20)
+                        dur = type === 'green' ? cfg.gMin + (1 - Math.pow(r, 5.0)) * (cfg.gMax - cfg.gMin) : cfg.rMin + Math.pow(r, 5.0) * (cfg.rMax - cfg.rMin);
+                    else if (currentTension >= 75)
+                        dur = type === 'green' ? cfg.gMin + Math.pow(r, 3.0) * (cfg.gMax - cfg.gMin) : cfg.rMin + (1 - Math.pow(r, 3.0)) * (cfg.rMax - cfg.rMin);
+                    else
+                        dur = type === 'green' ? cfg.gMin + r * (cfg.gMax - cfg.gMin) : cfg.rMin + r * (cfg.rMax - cfg.rMin);
+                } else {
+                    dur = type === 'green' ? cfg.gMin + Math.random() * (cfg.gMax - cfg.gMin) : cfg.rMin + Math.random() * (cfg.rMax - cfg.rMin);
+                }
             }
             dur = Math.max(dur, 0.4);
             const label = document.getElementById('status-label');
             if (type === 'green') {
-                document.body.className = 'green-active'; label.classList.remove('pulse', 'adaptive'); label.classList.add('countdown');
-                if (cfg.audioActive) { aSpace.pause(); aSpace.currentTime = 0; aRed.pause(); aRed.currentTime = 0; aGreen.currentTime = 0; aGreen.play().catch(()=>{}); }
-                runCountdown(dur); clock = setTimeout(() => cycle('red'), dur * 1000);
-            } else executeRedPhase(dur);
+                document.body.className = 'green-active';
+                label.classList.remove('pulse', 'adaptive');
+                label.classList.add('countdown');
+                if (cfg.audioActive) {
+                    aSpace.pause(); aSpace.currentTime = 0;
+                    aRed.pause();   aRed.currentTime   = 0;
+                    aGreen.currentTime = 0; aGreen.play().catch(()=>{});
+                }
+                runCountdown(dur);
+                clock = setTimeout(() => cycle('red'), dur * 1000);
+            } else {
+                executeRedPhase(dur);
+            }
         }
 
-        function finish() {
-            isLive = false; cancelAnimationFrame(animFrame); clearTimeout(clock); clearTimeout(mediaInt); clearInterval(countdownInt); clearInterval(tensionDecayTimer);
-            if (cfg && cfg.audioActive) { aSpace.pause(); aGreen.pause(); aRed.pause(); }
-            document.querySelector('.btn-edge').style.display = 'none'; document.querySelector('.btn-skip').style.display = 'none'; document.querySelector('.bottom-bar').style.display = 'none';
-            for (let i = 1; i <= 3; i++) { document.getElementById('buffer-' + i).classList.remove('active'); document.getElementById('vid-' + i).pause(); }
-            document.body.className = ''; document.body.style.backgroundColor = "#000000"; 
-            const label = document.getElementById('status-label'); label.innerHTML = ""; label.classList.remove('pulse', 'countdown');
+        function triggerEdge(event) {
+            if (event) event.stopPropagation();
+            if (!isLive || document.body.classList.contains('red-active')) return;
+            edgeCount++;
+            document.getElementById('edge-display').innerText = "EDGES: " + edgeCount;
+            if (cfg.tensionModeActive) currentTension = Math.min(100, currentTension + 25);
+            clearTimeout(clock); clearInterval(countdownInt);
+            executeRedPhase(cfg.longBreakDur, true);
+        }
 
-            let currentWinChance = 0; let minEdgesRequired = cfg.hardModeActive ? 5 : 3;
-            if (edgeCount >= minEdgesRequired) currentWinChance = Math.min(0.10 + (edgeCount * (cfg.hardModeActive ? 0.03 : 0.06)), cfg.hardModeActive ? 0.60 : 0.70);
+        // ── Finish / Spin ─────────────────────────────────────────────────────────
+        function finish() {
+            isLive = false;
+            cancelAnimationFrame(animFrame); clearTimeout(clock); clearTimeout(mediaInt);
+            clearInterval(countdownInt); clearInterval(tensionDecayTimer);
+            if (cfg?.audioActive) { aSpace.pause(); aGreen.pause(); aRed.pause(); }
+
+            document.querySelector('.btn-edge').style.display  = 'none';
+            document.querySelector('.btn-skip').style.display  = 'none';
+            document.querySelector('.bottom-bar').style.display = 'none';
+
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('buffer-' + i).classList.remove('active');
+                document.getElementById('vid-' + i).pause();
+            }
+
+            document.body.className = '';
+            document.body.style.backgroundColor = "#000000";
+            const label = document.getElementById('status-label');
+            label.innerHTML = ""; label.classList.remove('pulse', 'countdown');
+
+            const minEdges  = cfg.hardModeActive ? 5 : 3;
+            const bonus     = cfg.hardModeActive ? 0.03 : 0.06;
+            const cap       = cfg.hardModeActive ? 0.60 : 0.70;
+            let winChance   = edgeCount >= minEdges ? Math.min(0.10 + edgeCount * bonus, cap) : 0;
 
             setTimeout(() => {
-                let ticks = 0; const maxTicks = 30; let currentSpeed = 35; const slowdownFactor = 1.16; 
-                const isWin = Math.random() < currentWinChance; const isRuin = isWin && (Math.random() < 0.10); 
-                const spinWinText = "BE A GOOD BOY<br>AND CUM"; const spinLoseText = "AGAIN<br>LOSER"; const finalRuinText = "BE A GOOD BOY<br>AND RUIN IT<br>FOR ME";
-                const finalOutcome = isWin ? (isRuin ? finalRuinText : spinWinText) : spinLoseText; 
+                let ticks = 0, speed = 35;
+                const maxTicks  = 30;
+                const slow      = 1.16;
+                const isWin     = Math.random() < winChance;
+                const isRuin    = isWin && Math.random() < 0.10;
+                const winText   = "BE A GOOD BOY<br>AND CUM";
+                const loseText  = "AGAIN<br>LOSER";
+                const ruinText  = "BE A GOOD BOY<br>AND RUIN IT<br>FOR ME";
+                const final     = isWin ? (isRuin ? ruinText : winText) : loseText;
                 label.classList.add('adaptive');
 
-                function spinWheel() {
-                    label.innerHTML = (ticks % 2 === 0) ? spinWinText : spinLoseText; label.style.color = (ticks % 2 === 0) ? "var(--green)" : "var(--red)";
+                function spin() {
+                    label.innerHTML   = (ticks % 2 === 0) ? winText : loseText;
+                    label.style.color = (ticks % 2 === 0) ? "var(--green)" : "var(--red)";
                     ticks++;
-                    if (ticks < maxTicks) { currentSpeed *= slowdownFactor; setTimeout(spinWheel, currentSpeed); } 
+                    if (ticks < maxTicks) { speed *= slow; setTimeout(spin, speed); }
                     else {
-                        label.innerHTML = finalOutcome; label.style.color = "var(--white)"; 
+                        label.innerHTML   = final;
+                        label.style.color = "var(--white)";
                         if (isWin) {
-                            document.body.style.backgroundColor = "var(--green)"; isPostGame = true; label.classList.remove('adaptive');
-                            label.style.fontSize = "clamp(2.5rem, 9vw, 4rem)"; label.style.letterSpacing = "1px"; label.style.opacity = "1"; label.style.textShadow = "0px 4px 15px rgba(0,0,0,0.9), 0px 0px 8px rgba(0,0,0,0.9)"; label.style.lineHeight = "1.2";
-                            label.innerHTML = finalOutcome.replace(/<br>/g, ' '); 
-                            document.querySelector('.btn-skip').style.display = 'flex'; checkDisplay();
-                        } else { document.body.style.backgroundColor = "var(--red)"; setTimeout(() => { startSeamlessRestart(); }, 5000); }
+                            document.body.style.backgroundColor = "var(--green)";
+                            isPostGame = true;
+                            label.classList.remove('adaptive');
+                            label.style.cssText += "font-size:clamp(2.5rem,9vw,4rem);letter-spacing:1px;opacity:1;text-shadow:0px 4px 15px rgba(0,0,0,0.9);line-height:1.2;";
+                            label.innerHTML = final.replace(/<br>/g, ' ');
+                            document.querySelector('.btn-skip').style.display = 'flex';
+                            checkDisplay();
+                        } else {
+                            document.body.style.backgroundColor = "var(--red)";
+                            setTimeout(startSeamlessRestart, 5000);
+                        }
                     }
                 }
-                spinWheel();
-            }, 1500); 
+                spin();
+            }, 1500);
         }
 
         function startSeamlessRestart() {
-            isPostGame = false; currentTension = 0; 
-            document.querySelector('.btn-edge').style.display = 'flex'; document.querySelector('.btn-skip').style.display = 'flex'; document.querySelector('.bottom-bar').style.display = 'flex';
-            document.body.style.backgroundColor = ""; 
-            const label = document.getElementById('status-label'); label.classList.remove('adaptive', 'countdown'); label.style.cssText = ""; label.innerHTML = "";
-            startT = Date.now(); isLive = true; document.getElementById('progress-bar').style.width = "0%";
-            startTensionDecay(); engine(); cycle('green'); currentIndex++; manageBuffers();
+            isPostGame = false; currentTension = 0;
+            document.querySelector('.btn-edge').style.display  = 'flex';
+            document.querySelector('.btn-skip').style.display  = 'flex';
+            document.querySelector('.bottom-bar').style.display = 'flex';
+            document.body.style.backgroundColor = "";
+            const label = document.getElementById('status-label');
+            label.classList.remove('adaptive', 'countdown');
+            label.style.cssText = ""; label.innerHTML = "";
+            startT = Date.now(); isLive = true;
+            document.getElementById('progress-bar').style.width = "0%";
+            startTensionDecay(); engine(); cycle('green');
+            currentIndex++; manageBuffers();
         }
     </script>
 </body>

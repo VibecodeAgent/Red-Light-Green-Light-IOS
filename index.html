@@ -237,78 +237,63 @@
             }
         });
 
-        const authProxys = [
-            "https://corsproxy.io/?",
-            "https://api.allorigins.win/raw?url=",
-            "https://api.codetabs.com/v1/proxy/?quest="
-        ];
+        // Zentrale Proxy-Architektur: Unser Worker als Primärkanal
+        const WORKER_URL = "https://rlglpxy.vcaios.workers.dev/?url=";
 
-        const dataProxys = [
+        // Fallback-Armee für den Notfall (falls API komplett streikt)
+        const fallbackProxys = [
             "https://corsproxy.io/?",
             "https://api.allorigins.win/raw?url=",
             "https://api.codetabs.com/v1/proxy/?quest="
         ];
 
         async function getRedditToken() {
-            const puzzle = [
-                "QUUzMDhWc1",
-                "NqeXdzemF3",
-                "Z0YxcWZHdz",
-                "o1N01oTWdN",
-                "TzRUSDVaYV",
-                "Q3ajdKZXY3",
-                "NlJnMjlxamc="
-            ];
-            
-            const safeAuth = puzzle.join("");
             const targetUrl = "https://www.reddit.com/api/v1/access_token";
-
-            for (let proxyBase of authProxys) {
-                const url = proxyBase + encodeURIComponent(targetUrl);
-                try {
-                    console.log("Token Versuch ueber: " + proxyBase);
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': 'Basic ' + safeAuth,
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: 'grant_type=client_credentials'
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.access_token) return data.access_token;
-                    }
-                } catch (e) {
-                    console.log("Fehlschlag, wechsle sofort die Route.");
+            try {
+                console.log("Hole Token über privaten Worker...");
+                // Wir senden einen sauberen POST. Der Worker kümmert sich um das Basic-Auth Passwort!
+                const response = await fetch(WORKER_URL + encodeURIComponent(targetUrl), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: 'grant_type=client_credentials'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.access_token) return data.access_token;
                 }
+            } catch (e) {
+                console.log("Worker Auth fehlgeschlagen. Netzwerk prüfen.");
             }
             return null; 
         }
 
         async function fetchRedditData(url, token) {
             const oauthUrl = url.replace('www.reddit.com', 'oauth.reddit.com');
-            
-            for (let proxyBase of dataProxys) {
-                const pUrl = proxyBase + encodeURIComponent(oauthUrl);
-                try {
-                    const response = await fetch(pUrl, {
-                        headers: {
-                            'Authorization': 'Bearer ' + token,
-                            'User-Agent': 'web:mauerbot:v1.0'
-                        }
-                    });
-                    if (response.ok) return await response.json();
-                } catch (e) {}
+            try {
+                const response = await fetch(WORKER_URL + encodeURIComponent(oauthUrl), {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'User-Agent': 'web:mauerbot:v1.0'
+                    }
+                });
+                if (response.ok) return await response.json();
+            } catch (e) {
+                console.log("Fehler beim API-Abruf über Worker.");
             }
             return null;
         }
 
         async function fetchFallbackData(url) {
-            for (let proxyBase of dataProxys) {
+            // Hier nutzen wir das mehrstufige System: Zuerst Worker ohne Token, dann die öffentlichen
+            const allProxys = [WORKER_URL, ...fallbackProxys];
+            
+            for (let proxyBase of allProxys) {
                 const pUrl = proxyBase + encodeURIComponent(url);
                 try {
+                    console.log("Versuche rohen Abruf über: " + proxyBase);
                     const response = await fetch(pUrl);
                     if (response.ok) return await response.json();
                 } catch (e) {}
@@ -356,8 +341,9 @@
                     data = await fetchRedditData(url, token);
                 }
                 
+                // Der saubere Fallback ins mehrstufige "alte" System
                 if (!data || !data.data) {
-                    console.log("Token Weg gescheitert. Aktiviere rohen Abruf.");
+                    console.log("Token-Weg gescheitert. Aktiviere rohen Fallback-Abruf.");
                     data = await fetchFallbackData(url);
                 }
 

@@ -23,7 +23,6 @@
         .start-btn { width: 100%; background: var(--accent); color: var(--bg); border: none; padding: 1.4rem; border-radius: 1.5rem; font-weight: 900; font-size: 1.3rem; cursor: pointer; margin-top: 2rem; transition: all 0.3s; text-transform: uppercase; }
         
         #game-ui { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 10; box-sizing: border-box; }
-        
         .btn-close { position: absolute; top: calc(env(safe-area-inset-top, 25px) + 15px); left: max(env(safe-area-inset-left, 0px), 8px); background: rgba(0,0,0,0.15); border: none; color: rgba(255,255,255,0.7); width: 3.2rem; height: 3.2rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(5px); transition: background-color 0.2s; }
         .btn-close:active { background: rgba(0,0,0,0.4); color: #fff; }
         .btn-edge { position: absolute; top: calc(50% - 2.2rem); left: max(env(safe-area-inset-left, 0px), 8px); transform: translateY(-50%); background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); color: rgba(239, 68, 68, 0.4); width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 200; backdrop-filter: blur(5px); transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
@@ -106,7 +105,6 @@
             <div class="input-group"><label>Grün Max</label><input type="number" id="t-gmax" value="25"></div>
             <div class="input-group"><label>Rot Min</label><input type="number" id="t-rmin" value="4"></div>
             <div class="input-group"><label>Rot Max</label><input type="number" id="t-rmax" value="15"></div>
-            
             <div class="input-group full-width">
                 <label>Lange Pause</label>
                 <div class="checkbox-group" style="padding: 0.8rem;">
@@ -130,6 +128,7 @@
                 </div>
             </div>
         </div>
+
         <button class="start-btn" onclick="bootGame()">SPIEL STARTEN</button>
     </div>
 
@@ -160,60 +159,102 @@
 
     <script>
         let cfg = {}; let isLive = false; let startT; let clock; let countdownInt; let mediaInt; let animFrame;
-        let redditPosts = []; 
-        let edgeCount = 0; 
-        let isPostGame = false; 
-        let currentTension = 0; 
-        let tensionDecayTimer;
+        let redditPosts = []; let edgeCount = 0; let isPostGame = false; let currentTension = 0; let tensionDecayTimer;
         let currentIndex = 0;
         let bufferState = [ { id: 1, reqIdx: -1, isReady: false }, { id: 2, reqIdx: -1, isReady: false }, { id: 3, reqIdx: -1, isReady: false } ];
 
-        const aGreen = document.getElementById('sfx-green');
-        const aRed = document.getElementById('sfx-red');
-        const aSpace = document.getElementById('sfx-space');
-
+        const aGreen = document.getElementById('sfx-green'); const aRed = document.getElementById('sfx-red'); const aSpace = document.getElementById('sfx-space');
         aGreen.onended = () => { if (isLive && cfg.audioActive) aSpace.play().catch(()=>{}); };
         aRed.onended = () => { if (isLive && cfg.audioActive) aSpace.play().catch(()=>{}); };
-
         window.addEventListener('pagehide', () => {
             if (aGreen) aGreen.pause(); if (aRed) aRed.pause(); if (aSpace) aSpace.pause();
             for (let i = 1; i <= 3; i++) { let v = document.getElementById('vid-' + i); if (v) v.pause(); }
         });
 
-        // --- DIE NEUE GATEWAY ARCHITEKTUR ---
-        const GATEWAY_URL = "https://rlglpxy.vcaios.workers.dev";
+        // DEIN WORKER ALS ZENTRALE
+        const WORKER_BASE = "https://rlglpxy.vcaios.workers.dev";
 
         async function getRedditToken() {
+            console.log("-> [STUFE 0] Beantrage OAuth-Token beim Worker...");
             try {
-                console.log("Hole API-Schlüssel über Gateway...");
-                const response = await fetch(`${GATEWAY_URL}/auth`);
-                if (response.ok) {
-                    const data = await response.json();
-                    return data.access_token;
-                } else {
-                    console.error("Gateway Auth abgelehnt. Status:", response.status);
+                const r = await fetch(`${WORKER_BASE}/auth`);
+                if (r.ok) {
+                    const data = await r.json();
+                    if (data.access_token) {
+                        console.log("-> [ERFOLG] Token erhalten.");
+                        return data.access_token;
+                    }
                 }
-            } catch (e) { console.error("Netzwerkfehler zum Gateway."); }
-            return null; 
+                console.warn("-> [FEHLSCHLAG] Token-Abruf. Status:", r.status);
+            } catch (e) { console.error("-> [FEHLER] Worker /auth nicht erreichbar.", e); }
+            return null;
         }
 
-        async function fetchRedditData(url, token) {
-            const oauthUrl = url.replace('www.reddit.com', 'oauth.reddit.com');
+        async function fetchRedditData(originalUrl, token) {
+            console.log("-----------------------------------------");
+            console.log("STARTE ABRUF FUER:", originalUrl);
+
+            // STUFE 1: Offizielle API ueber Worker
+            if (token) {
+                const oauthUrl = originalUrl.replace('www.reddit.com', 'oauth.reddit.com');
+                console.log("-> [STUFE 1] Versuche offizielle API (OAuth) via Worker...");
+                try {
+                    const r1 = await fetch(`${WORKER_BASE}/data?url=${encodeURIComponent(oauthUrl)}`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (r1.ok) {
+                        const data = await r1.json();
+                        if (data && data.data && data.data.children && data.data.children.length > 0) {
+                            console.log("-> [ERFOLG] Daten ueber offizielle API geladen!");
+                            return data;
+                        } else console.warn("-> [INFO] API lieferte leere Liste (Zensur?). Gehe zu Stufe 2.");
+                    } else console.warn("-> [FEHLSCHLAG] API antwortete mit Status:", r1.status);
+                } catch (e) { console.warn("-> [FEHLER] API-Anfrage gescheitert:", e); }
+            } else console.log("-> [INFO] Kein Token vorhanden, ueberspringe Stufe 1.");
+
+            // STUFE 2: Roher Abruf ueber privaten Worker
+            console.log("-> [STUFE 2] Versuche rohen Tarn-Abruf via privatem Worker...");
             try {
-                console.log("Rufe Daten über Gateway ab...");
-                const response = await fetch(`${GATEWAY_URL}/data?url=${encodeURIComponent(oauthUrl)}`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (response.ok) return await response.json();
-            } catch (e) { console.error("Datenabruf gescheitert."); }
+                const r2 = await fetch(`${WORKER_BASE}/raw?url=${encodeURIComponent(originalUrl)}`);
+                if (r2.ok) {
+                    const data = await r2.json();
+                    if (data && data.data && data.data.children && data.data.children.length > 0) {
+                         console.log("-> [ERFOLG] Daten ueber Tarn-Worker geladen!");
+                         return data;
+                    }
+                } else console.warn("-> [FEHLSCHLAG] Tarn-Worker antwortete mit Status:", r2.status);
+            } catch (e) { console.warn("-> [FEHLER] Tarn-Worker Anfrage gescheitert."); }
+
+            // STUFE 3: AllOrigins
+            console.log("-> [STUFE 3] Versuche AllOrigins Fallback...");
+            try {
+                const r3 = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(originalUrl)}`);
+                if (r3.ok) {
+                    const res3 = await r3.json();
+                    if (res3.contents) {
+                        console.log("-> [ERFOLG] Daten ueber AllOrigins geladen!");
+                        return JSON.parse(res3.contents);
+                    }
+                }
+            } catch (e) { console.warn("-> [FEHLER] AllOrigins gescheitert."); }
+
+            // STUFE 4: Corsproxy.io
+            console.log("-> [STUFE 4] Versuche Corsproxy.io Fallback...");
+            try {
+                const r4 = await fetch(`https://corsproxy.io/?${encodeURIComponent(originalUrl)}`);
+                if (r4.ok) {
+                    console.log("-> [ERFOLG] Daten ueber Corsproxy geladen!");
+                    return await r4.json();
+                }
+            } catch (e) { console.error("-> [FEHLER] Corsproxy gescheitert."); }
+
+            console.error("-> [ABBRUCH] Alle 4 Stufen gescheitert.");
             return null;
         }
 
         function startTensionDecay() {
             clearInterval(tensionDecayTimer);
-            tensionDecayTimer = setInterval(() => {
-                if (isLive && currentTension > 0) currentTension = Math.max(0, currentTension - 1);
-            }, 4000); 
+            tensionDecayTimer = setInterval(() => { if (isLive && currentTension > 0) currentTension = Math.max(0, currentTension - 1); }, 4000); 
         }
 
         function getHDUrl(post) {
@@ -228,18 +269,20 @@
             const fImg = document.getElementById('f-img').checked;
             const fVid = document.getElementById('f-vid').checked;
             const fGif = document.getElementById('f-gif').checked;
+            
             const fetchSort = sort === 'random' ? 'hot' : sort;
             const timeParam = sort === 'top' ? '&t=all' : '';
+            const extraParams = `&include_over_18=true${timeParam}`; // NEU: NSFW Parameter hier
             
             let token = await getRedditToken();
-            if (!token) return false;
 
             const buckets = await Promise.all(sourceList.map(async (source) => {
                 let url = source.toLowerCase().startsWith('u/') 
-                    ? `https://www.reddit.com/user/${source.substring(2)}/submitted.json?sort=${fetchSort}&limit=50${timeParam}`
-                    : `https://www.reddit.com/r/${source}/${fetchSort}.json?limit=50${timeParam}`;
+                    ? `https://www.reddit.com/user/${source.substring(2)}/submitted.json?sort=${fetchSort}&limit=50${extraParams}`
+                    : `https://www.reddit.com/r/${source}/${fetchSort}.json?limit=50${extraParams}`;
                 
                 let data = await fetchRedditData(url, token);
+                
                 if (!data || !data.data || !data.data.children) return [];
                 
                 return data.data.children.map(c => c.data).filter(p => {
@@ -255,7 +298,6 @@
 
             let combined = [];
             buckets.forEach(b => { combined = combined.concat(b); });
-            
             let unique = [...new Map(combined.map(item => [item.id, item])).values()];
             for (let i = unique.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -275,11 +317,9 @@
             if (event) event.stopPropagation(); 
             if (!isLive) return;
             if (document.body.classList.contains('red-active')) return;
-            edgeCount++;
-            document.getElementById('edge-display').innerText = "EDGES: " + edgeCount;
+            edgeCount++; document.getElementById('edge-display').innerText = "EDGES: " + edgeCount;
             if (cfg.tensionModeActive) currentTension = Math.min(100, currentTension + 25);
-            clearTimeout(clock); clearInterval(countdownInt);
-            executeRedPhase(cfg.longBreakDur, true);
+            clearTimeout(clock); clearInterval(countdownInt); executeRedPhase(cfg.longBreakDur, true);
         }
 
         function loadPostIntoBuffer(idx) {
@@ -288,28 +328,19 @@
             let bId = (idx % 3) + 1;
             let state = bufferState[bId - 1];
             if (state.reqIdx === idx) return;
-
             state.reqIdx = idx; state.isReady = false;
-            const img = document.getElementById('img-' + bId);
-            const vid = document.getElementById('vid-' + bId);
-            const post = redditPosts[safeIdx];
 
-            img.style.display = 'none'; vid.style.display = 'none';
-            vid.pause(); vid.removeAttribute('src'); img.removeAttribute('src'); vid.load();
+            const img = document.getElementById('img-' + bId); const vid = document.getElementById('vid-' + bId); const post = redditPosts[safeIdx];
+            img.style.display = 'none'; vid.style.display = 'none'; vid.pause(); vid.removeAttribute('src'); img.removeAttribute('src'); vid.load();
 
             const handleReady = () => { if (state.reqIdx === idx) { state.isReady = true; checkDisplay(); } };
             const handleErr = () => { if (state.reqIdx === idx) { state.isReady = true; if (currentIndex === idx) { currentIndex++; manageBuffers(); } } };
 
-            img.onload = handleReady; img.onerror = handleErr;
-            vid.onloadeddata = handleReady; vid.onerror = handleErr;
+            img.onload = handleReady; img.onerror = handleErr; vid.onloadeddata = handleReady; vid.onerror = handleErr;
 
-            if (post.is_video && post.media?.reddit_video) {
-                vid.src = post.media.reddit_video.fallback_url; vid.style.display = 'block'; vid.load();
-            } else if (post.preview?.reddit_video_preview) {
-                vid.src = post.preview.reddit_video_preview.fallback_url; vid.style.display = 'block'; vid.load();
-            } else {
-                img.src = getHDUrl(post); img.style.display = 'block';
-            }
+            if (post.is_video && post.media?.reddit_video) { vid.src = post.media.reddit_video.fallback_url; vid.style.display = 'block'; vid.load(); } 
+            else if (post.preview?.reddit_video_preview) { vid.src = post.preview.reddit_video_preview.fallback_url; vid.style.display = 'block'; vid.load(); } 
+            else { img.src = getHDUrl(post); img.style.display = 'block'; }
         }
 
         function checkDisplay() {
@@ -320,12 +351,9 @@
             if (state.isReady && state.reqIdx === currentIndex) {
                 document.querySelectorAll('.media-buffer').forEach(b => b.classList.remove('active'));
                 document.getElementById('buffer-' + bId).classList.add('active');
-
                 let vid = document.getElementById('vid-' + bId);
                 if (vid.style.display === 'block') { let p = vid.play(); if(p !== undefined) p.catch(()=>{}); }
-
                 for (let i = 1; i <= 3; i++) { if (i !== bId) document.getElementById('vid-' + i).pause(); }
-
                 clearTimeout(mediaInt);
                 if (!isPostGame) mediaInt = setTimeout(() => { currentIndex++; manageBuffers(); }, cfg.imgDur * 1000);
             }
@@ -345,32 +373,22 @@
             if (audioWantsActive) { [aGreen, aRed, aSpace].forEach(a => { a.play().catch(()=>{}); a.pause(); a.currentTime = 0; }); }
 
             const btn = document.querySelector('.start-btn'); 
-            const originalText = btn.innerText;
-            btn.innerText = "VERBINDUNG ZUM GATEWAY..."; btn.disabled = true;
+            const originalText = btn.innerText; btn.innerText = "AUTHENTIFIZIERUNG..."; btn.disabled = true;
             
             const success = await fetchSources();
-            
-            if(!success) { 
-                alert("Login fehlgeschlagen oder keine Inhalte gefunden. Siehe Konsole."); 
-                btn.innerText = originalText; btn.disabled = false; return; 
-            }
+            if(!success) { alert("Kein Kanal antwortet erfolgreich. Bitte Konsole (F12) pruefen."); btn.innerText = originalText; btn.disabled = false; return; }
             
             const totalSec = parseFloat(document.getElementById('t-total-min').value) * 60;
             cfg = {
                 total: totalSec, imgDur: parseFloat(document.getElementById('t-img-dur').value), audioActive: audioWantsActive,
                 gMin: parseFloat(document.getElementById('t-gmin').value), gMax: parseFloat(document.getElementById('t-gmax').value),
                 rMin: parseFloat(document.getElementById('t-rmin').value), rMax: parseFloat(document.getElementById('t-rmax').value),
-                tensionModeActive: document.getElementById('f-tension-mode').checked,
-                longBreakActive: document.getElementById('f-long-break').checked,
-                longBreakDur: parseFloat(document.getElementById('t-long-break-dur').value),
-                hardModeActive: document.getElementById('f-hard-mode').checked
+                tensionModeActive: document.getElementById('f-tension-mode').checked, longBreakActive: document.getElementById('f-long-break').checked,
+                longBreakDur: parseFloat(document.getElementById('t-long-break-dur').value), hardModeActive: document.getElementById('f-hard-mode').checked
             };
             
-            document.getElementById('setup-ui').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'block';
-            
-            isLive = true; startT = Date.now();
-            startTensionDecay(); engine(); cycle('green'); manageBuffers();
+            document.getElementById('setup-ui').style.display = 'none'; document.getElementById('game-ui').style.display = 'block';
+            isLive = true; startT = Date.now(); startTensionDecay(); engine(); cycle('green'); manageBuffers();
         }
 
         function engine() {
@@ -381,24 +399,16 @@
         }
 
         function runCountdown(duration) {
-            clearInterval(countdownInt); 
-            const endT = Date.now() + (duration * 1000); 
-            const label = document.getElementById('status-label');
-            const update = () => { 
-                let left = (endT - Date.now()) / 1000; 
-                if (left > 0) label.innerHTML = Math.ceil(left); else { label.innerHTML = ""; clearInterval(countdownInt); } 
-            };
+            clearInterval(countdownInt); const endT = Date.now() + (duration * 1000); const label = document.getElementById('status-label');
+            const update = () => { let left = (endT - Date.now()) / 1000; if (left > 0) label.innerHTML = Math.ceil(left); else { label.innerHTML = ""; clearInterval(countdownInt); } };
             update(); countdownInt = setInterval(update, 100);
         }
 
         function executeRedPhase(dur, isForcedEdge = false) {
-            clearInterval(countdownInt); document.body.className = 'red-active'; 
-            const label = document.getElementById('status-label');
+            clearInterval(countdownInt); document.body.className = 'red-active'; const label = document.getElementById('status-label');
             label.classList.remove('countdown');
-
-            if (isForcedEdge) { label.innerHTML = "DONT YOU <br> DARE CUM"; label.classList.add('adaptive'); label.classList.add('pulse'); } 
+            if (isForcedEdge) { label.innerHTML = "DONT YOU <br> DARE CUM"; label.classList.add('adaptive', 'pulse'); } 
             else { label.innerHTML = "HANDS<br>OFF"; label.classList.remove('adaptive'); }
-            
             if (cfg.audioActive) { aSpace.pause(); aSpace.currentTime = 0; aGreen.pause(); aGreen.currentTime = 0; aRed.currentTime = 0; aRed.play().catch(()=>{}); }
             clock = setTimeout(() => cycle('green'), dur * 1000);
         }
@@ -406,9 +416,8 @@
         function cycle(type) {
             if (!isLive) return;
             let dur;
-            if (type === 'red' && cfg.longBreakActive && Math.random() < 0.10) {
-                dur = cfg.longBreakDur; 
-            } else {
+            if (type === 'red' && cfg.longBreakActive && Math.random() < 0.10) dur = cfg.longBreakDur; 
+            else {
                 if (cfg.tensionModeActive) {
                     let r = Math.random(); 
                     if (currentTension <= 20) dur = type === 'green' ? cfg.gMin + (1 - Math.pow(r, 5.0)) * (cfg.gMax - cfg.gMin) : cfg.rMin + Math.pow(r, 5.0) * (cfg.rMax - cfg.rMin);
@@ -416,10 +425,8 @@
                     else dur = type === 'green' ? cfg.gMin + r * (cfg.gMax - cfg.gMin) : cfg.rMin + r * (cfg.rMax - cfg.rMin);
                 } else dur = type === 'green' ? cfg.gMin + Math.random() * (cfg.gMax - cfg.gMin) : cfg.rMin + Math.random() * (cfg.rMax - cfg.rMin);
             }
-
             dur = Math.max(dur, 0.4);
             const label = document.getElementById('status-label');
-            
             if (type === 'green') {
                 document.body.className = 'green-active'; label.classList.remove('pulse', 'adaptive'); label.classList.add('countdown');
                 if (cfg.audioActive) { aSpace.pause(); aSpace.currentTime = 0; aRed.pause(); aRed.currentTime = 0; aGreen.currentTime = 0; aGreen.play().catch(()=>{}); }

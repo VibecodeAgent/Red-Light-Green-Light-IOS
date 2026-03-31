@@ -317,47 +317,47 @@
         }
 
         async function fetchSources() {
-            const sourceStr = document.getElementById('t-sources').value || "memes";
-            const sort = document.getElementById('t-sort').value;
-            const sourceList = sourceStr.split(',').map(s => s.trim()).filter(s => s !== "");
-            const fImg = document.getElementById('f-img').checked;
+            const sourceStr  = document.getElementById('t-sources').value || 'amateur';
+            const sort       = document.getElementById('t-sort').value;
+            const sourceList = sourceStr.split(',').map(s => s.trim()).filter(Boolean);
             const fVid = document.getElementById('f-vid').checked;
             const fGif = document.getElementById('f-gif').checked;
-            
-            const fetchSort = sort === 'random' ? 'hot' : sort;
-            const timeParam = sort === 'top' ? '&t=all' : '';
-            const extraParams = `&include_over_18=true${timeParam}`; // NSFW Parameter immer aktiv
-            
-            let token = await getRedditToken();
+            // Hinweis: Redgifs liefert primär Videos/GIFs — fImg-Checkbox hat kaum Effekt
 
-            const buckets = await Promise.all(sourceList.map(async (source) => {
-                let url = source.toLowerCase().startsWith('u/') 
-                    ? `https://www.reddit.com/user/${source.substring(2)}/submitted.json?sort=${fetchSort}&limit=50${extraParams}`
-                    : `https://www.reddit.com/r/${source}/${fetchSort}.json?limit=50${extraParams}`;
-                
-                let data = await fetchRedditData(url, token);
-                
-                if (!data || !data.data || !data.data.children) return [];
-                
-                return data.data.children.map(c => c.data).filter(p => {
-                    const isG = p.url.endsWith('.gif') || p.preview?.reddit_video_preview;
-                    const isV = p.is_video || p.post_hint === 'hosted:video';
-                    const isI = p.post_hint === 'image' || p.url.match(/\.(jpg|jpeg|png)$/i);
-                    if (fVid && isV) return true;
-                    if (fImg && isI && !isG) return true;
-                    if (fGif && isG) return true;
-                    return false;
-                });
+            // Ein Request pro Tag/Quelle, parallel
+            const buckets = await Promise.all(sourceList.map(async (tag) => {
+                const url = `${WORKER_BASE}/search?tags=${encodeURIComponent(tag)}&sort=${sort}&count=50`;
+                try {
+                    const r = await fetch(url);
+                    if (!r.ok) { console.warn(`Worker Fehler für "${tag}": ${r.status}`); return []; }
+                    const data = await r.json();
+                    return Array.isArray(data.posts) ? data.posts : [];
+                } catch (e) {
+                    console.error(`Netzwerkfehler für "${tag}":`, e);
+                    return [];
+                }
             }));
 
+            // Medientypen filtern (Worker gibt bereits normalisierten Shape zurück)
             let combined = [];
-            buckets.forEach(b => { combined = combined.concat(b); });
-            let unique = [...new Map(combined.map(item => [item.id, item])).values()];
+            buckets.forEach(posts => {
+                const filtered = posts.filter(p => {
+                    const isVid = p.is_video && p.post_hint === 'hosted:video';
+                    const isGif = !!p.preview?.reddit_video_preview;
+                    if (fVid && isVid) return true;
+                    if (fGif && isGif) return true;
+                    return !fVid && !fGif; // Fallback: alles zeigen wenn nichts ausgewählt
+                });
+                combined = combined.concat(filtered);
+            });
+
+            // Deduplizieren & mischen
+            let unique = [...new Map(combined.map(p => [p.id, p])).values()];
             for (let i = unique.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [unique[i], unique[j]] = [unique[j], unique[i]];
             }
-            redditPosts = unique;
+            redditPosts = unique; // Variable heißt noch redditPosts — ist ok, nur ein Name
             return redditPosts.length > 0;
         }
 
